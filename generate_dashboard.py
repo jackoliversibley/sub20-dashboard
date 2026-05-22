@@ -400,7 +400,7 @@ def build_map_section(latest_map, best_efforts):
   }}
   const coords=decode({poly_js});
   const map=L.map('runMap',{{zoomControl:true,scrollWheelZoom:false,dragging:true,doubleClickZoom:true}});
-  L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_matter_no_labels/{{z}}/{{x}}/{{y}}{{r}}.png',{{maxZoom:19,subdomains:'abcd'}}).addTo(map);
+  L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_nolabels/{{z}}/{{x}}/{{y}}{{r}}.png',{{maxZoom:19,subdomains:'abcd'}}).addTo(map);
   const route=L.polyline(coords,{{color:'#f97316',weight:3.5,opacity:0.95,lineCap:'round',lineJoin:'round'}}).addTo(map);
   L.circleMarker(coords[0],{{radius:7,fillColor:'#22c55e',color:'#08090d',weight:2.5,fillOpacity:1}}).bindTooltip('Start',{{permanent:false,direction:'right'}}).addTo(map);
   L.circleMarker(coords[coords.length-1],{{radius:7,fillColor:'#ef4444',color:'#08090d',weight:2.5,fillOpacity:1}}).bindTooltip('Finish',{{permanent:false,direction:'right'}}).addTo(map);
