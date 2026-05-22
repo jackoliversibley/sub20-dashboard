@@ -90,10 +90,28 @@ def fetch_strava():
     athlete_id = strava_get(token, "athlete")["id"]
     stats = strava_get(token, f"athletes/{athlete_id}/stats")
 
+    # Latest run map — grab summary_polyline from most recent activity
+    latest_map = None
+    for act in activities[:5]:
+        poly = (act.get("map") or {}).get("summary_polyline", "")
+        if poly:
+            latest_map = {
+                "polyline":       poly,
+                "name":           act.get("name", "Morning Run"),
+                "date":           act["start_date_local"][:10],
+                "distance_m":     act.get("distance", 0),
+                "moving_time":    act.get("moving_time", 0),
+                "avg_hr":         act.get("average_heartrate"),
+                "elevation_gain": act.get("total_elevation_gain", 0),
+                "activity_id":    act["id"],
+            }
+            break
+
     return {
-        "activities": activities[:10],
+        "activities":   activities[:10],
         "best_efforts": best_efforts,
-        "stats": stats,
+        "stats":        stats,
+        "latest_map":   latest_map,
     }
 
 
@@ -320,6 +338,78 @@ def build_steps_chart_data(steps_data):
     )
 
 
+def build_map_section(latest_map, best_efforts):
+    if not latest_map:
+        return "", ""
+    poly = latest_map["polyline"]
+    dist_km = round(latest_map["distance_m"] / 1000, 2)
+    run_date = date.fromisoformat(latest_map["date"]).strftime("%b %-d, %Y")
+    hr = int(latest_map["avg_hr"] or 0)
+    elev = int(latest_map["elevation_gain"] or 0)
+    dist_km_val = latest_map["distance_m"] / 1000
+    moving_time = latest_map.get("moving_time") or 0
+    pace_s = int(moving_time / dist_km_val) if dist_km_val > 0 and moving_time > 0 else 0
+
+    # Best 5k for that run date
+    be_map = {e["date"]: e["secs"] for e in best_efforts}
+    split_secs = be_map.get(latest_map["date"])
+    split_str = mmss(split_secs) if split_secs else "–"
+
+    # Prefer 5k split for pace display (most representative)
+    if split_secs:
+        pace_s = split_secs // 5
+    pace_str = mmss(pace_s) if pace_s else "–"
+
+    run_name = latest_map["name"]
+
+    html = f"""
+<p class="section-title">Latest Run</p>
+<div class="card map-card" style="margin-bottom:16px">
+  <div class="map-header">
+    <div>
+      <div class="map-title">{run_name}</div>
+      <div class="map-subtitle">{run_date}</div>
+    </div>
+    <div class="map-stats">
+      <div class="map-stat"><div class="map-stat-val" style="color:var(--jack)">{dist_km}<span style="font-size:11px;font-weight:400">km</span></div><div class="map-stat-lbl">Distance</div></div>
+      <div class="map-stat"><div class="map-stat-val">{split_str}</div><div class="map-stat-lbl">5k split</div></div>
+      <div class="map-stat"><div class="map-stat-val" style="color:var(--jack)">{pace_str}</div><div class="map-stat-lbl">Pace /km</div></div>
+      <div class="map-stat"><div class="map-stat-val">+{elev}<span style="font-size:11px;font-weight:400">m</span></div><div class="map-stat-lbl">Elevation</div></div>
+      <div class="map-stat"><div class="map-stat-val">{hr}</div><div class="map-stat-lbl">Avg HR</div></div>
+    </div>
+  </div>
+  <div id="runMap"></div>
+</div>"""
+
+    poly_js = json.dumps(poly)
+    js = f"""
+<script>
+(function() {{
+  function decode(str) {{
+    let i=0,lat=0,lng=0,out=[];
+    while(i<str.length){{
+      let b,shift=0,res=0;
+      do{{b=str.charCodeAt(i++)-63;res|=(b&0x1f)<<shift;shift+=5;}}while(b>=0x20);
+      lat+=res&1?~(res>>1):res>>1;
+      shift=0;res=0;
+      do{{b=str.charCodeAt(i++)-63;res|=(b&0x1f)<<shift;shift+=5;}}while(b>=0x20);
+      lng+=res&1?~(res>>1):res>>1;
+      out.push([lat/1e5,lng/1e5]);
+    }}
+    return out;
+  }}
+  const coords=decode({poly_js});
+  const map=L.map('runMap',{{zoomControl:true,scrollWheelZoom:false,dragging:true,doubleClickZoom:true}});
+  L.tileLayer('https://{{s}}.basemaps.cartocdn.com/dark_matter_no_labels/{{z}}/{{x}}/{{y}}{{r}}.png',{{maxZoom:19,subdomains:'abcd'}}).addTo(map);
+  const route=L.polyline(coords,{{color:'#f97316',weight:3.5,opacity:0.95,lineCap:'round',lineJoin:'round'}}).addTo(map);
+  L.circleMarker(coords[0],{{radius:7,fillColor:'#22c55e',color:'#08090d',weight:2.5,fillOpacity:1}}).bindTooltip('Start',{{permanent:false,direction:'right'}}).addTo(map);
+  L.circleMarker(coords[coords.length-1],{{radius:7,fillColor:'#ef4444',color:'#08090d',weight:2.5,fillOpacity:1}}).bindTooltip('Finish',{{permanent:false,direction:'right'}}).addTo(map);
+  map.fitBounds(route.getBounds(),{{padding:[24,24]}});
+}})();
+</script>"""
+    return html, js
+
+
 def generate(strava, sleep_data, steps_data, runs, notion_lines):
     best_efforts = strava["best_efforts"]
     stats        = strava["stats"]
@@ -370,6 +460,9 @@ def generate(strava, sleep_data, steps_data, runs, notion_lines):
 
     sync_date = date.today().strftime("%b %-d, %Y")
 
+    # Map section
+    map_html, map_js = build_map_section(strava.get("latest_map"), best_efforts)
+
     # ── Weekly volume (last 5 weeks) ──────────────────────────────────────
     from collections import defaultdict
     weekly_km = defaultdict(float)
@@ -392,6 +485,8 @@ def generate(strava, sleep_data, steps_data, runs, notion_lines):
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jack vs Louis — Sub-20 5k</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
@@ -473,6 +568,19 @@ def generate(strava, sleep_data, steps_data, runs, notion_lines):
     .legend-item{{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--subtle)}}
     .legend-dot{{width:8px;height:8px;border-radius:50%;flex-shrink:0}}
     footer{{text-align:center;font-size:11px;color:var(--muted);padding:20px 0 8px;line-height:1.8}}
+    .map-card{{padding:0;overflow:hidden}}
+    .map-header{{padding:14px 20px 12px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--border);flex-wrap:wrap}}
+    .map-title{{font-size:15px;font-weight:700}}
+    .map-subtitle{{font-size:12px;color:var(--subtle);margin-top:2px}}
+    .map-stats{{margin-left:auto;display:flex;gap:20px;flex-wrap:wrap}}
+    .map-stat{{text-align:right}}
+    .map-stat-val{{font-size:14px;font-weight:700}}
+    .map-stat-lbl{{font-size:10px;color:var(--subtle);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}}
+    #runMap{{height:300px;width:100%;background:#08090d}}
+    .leaflet-container{{background:#08090d !important}}
+    .leaflet-control-attribution{{display:none !important}}
+    .leaflet-bar a{{background:#111218 !important;color:var(--text) !important;border-color:#1e2030 !important}}
+    .leaflet-bar a:hover{{background:#1e2030 !important}}
   </style>
 </head>
 <body>
@@ -545,6 +653,8 @@ def generate(strava, sleep_data, steps_data, runs, notion_lines):
     </div>
   </div>
 </div>
+
+{map_html}
 
 <p class="section-title">5k Best Effort Progression</p>
 <div class="card" style="margin-bottom:16px">
@@ -744,6 +854,7 @@ new Chart(document.getElementById('stepsChart'),{{
   }}
 }});
 </script>
+{map_js}
 </body>
 </html>"""
     OUTPUT.write_text(html)

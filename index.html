@@ -4,373 +4,106 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jack vs Louis — Sub-20 5k</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg:        #08090d;
-      --surface:   #111218;
-      --surface2:  #161820;
-      --border:    #1e2030;
-      --muted:     #3a3d52;
-      --text:      #e2e4f0;
-      --subtle:    #7a7f9a;
-      --jack:      #f97316;
-      --jack-dim:  #7c3210;
-      --louis:     #3b82f6;
-      --target:    #22c55e;
-      --warn:      #eab308;
-      --danger:    #ef4444;
-      --radius:    12px;
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#08090d;--surface:#111218;--border:#1e2030;--muted:#3a3d52;
+      --text:#e2e4f0;--subtle:#7a7f9a;
+      --jack:#f97316;--jack-dim:#7c3210;--louis:#3b82f6;
+      --target:#22c55e;--warn:#eab308;--danger:#ef4444;--radius:12px;
     }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      min-height: 100vh;
-      padding: 24px;
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    .grid { display: grid; gap: 16px; }
-    .col-2 { grid-template-columns: 1fr 1fr; }
-    .col-3 { grid-template-columns: 1fr 1fr 1fr; }
-    @media (max-width: 860px) { .col-2, .col-3 { grid-template-columns: 1fr; } }
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-    }
-    .card-label {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--subtle);
-      margin-bottom: 10px;
-    }
-    .section-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--subtle);
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      margin: 24px 0 10px;
-    }
-
-    /* ── Header ── */
-    header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      gap: 16px;
-    }
-    header h1 { font-size: 24px; font-weight: 800; line-height: 1.2; }
-    header h1 span { color: var(--target); }
-    .sync-badge {
-      font-size: 11px;
-      color: var(--subtle);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 5px 12px;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .sync-badge b { color: var(--target); }
-
-    /* ── Intro banner ── */
-    .intro-banner {
-      background: linear-gradient(135deg, rgba(249,115,22,.07) 0%, rgba(34,197,94,.05) 100%);
-      border: 1px solid rgba(249,115,22,.2);
-      border-radius: var(--radius);
-      padding: 18px 22px;
-      margin-bottom: 16px;
-      font-size: 14px;
-      line-height: 1.7;
-      color: var(--text);
-    }
-    .intro-banner p + p { margin-top: 8px; }
-    .intro-banner strong { color: var(--jack); }
-    .intro-banner em { color: var(--subtle); font-style: normal; }
-
-    /* ── Progress hero ── */
-    .hero-card { padding: 24px; }
-    .hero-times {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-    .hero-time-big {
-      font-size: 60px;
-      font-weight: 800;
-      letter-spacing: -2px;
-      color: var(--jack);
-      line-height: 1;
-    }
-    .hero-time-sub { font-size: 12px; color: var(--subtle); margin-top: 4px; }
-    .hero-gap { text-align: right; }
-    .hero-gap-num { font-size: 30px; font-weight: 700; color: var(--warn); }
-    .hero-gap-sub { font-size: 12px; color: var(--subtle); }
-    .progress-track {
-      position: relative;
-      height: 14px;
-      background: var(--muted);
-      border-radius: 7px;
-      margin: 14px 0 26px;
-    }
-    .progress-fill {
-      height: 100%;
-      border-radius: 7px;
-      background: linear-gradient(90deg, var(--jack-dim), var(--jack));
-      position: relative;
-    }
-    .progress-fill::after {
-      content: '';
-      position: absolute;
-      right: -1px; top: -3px;
-      width: 20px; height: 20px;
-      background: var(--jack);
-      border-radius: 50%;
-      border: 3px solid var(--bg);
-    }
-    .target-line {
-      position: absolute;
-      right: 0; top: -4px;
-      width: 3px; height: 22px;
-      background: var(--target);
-      border-radius: 2px;
-    }
-    .milestone-dot {
-      position: absolute;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--muted);
-      border: 2px solid var(--border);
-    }
-    .progress-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: var(--subtle);
-      margin-top: -20px;
-    }
-    .stats-row { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 14px; }
-    .stat-item { flex: 1; min-width: 70px; }
-    .stat-val { font-size: 20px; font-weight: 700; }
-    .stat-lbl { font-size: 11px; color: var(--subtle); margin-top: 2px; }
-
-    /* ── Rivalry ── */
-    .rival-card { position: relative; overflow: hidden; }
-    .rival-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-    }
-    .rival-jack::before  { background: var(--jack); }
-    .rival-louis::before { background: var(--louis); }
-    .rival-name { font-size: 17px; font-weight: 800; margin-bottom: 2px; }
-    .rival-jack .rival-name  { color: var(--jack); }
-    .rival-louis .rival-name { color: var(--louis); }
-    .rival-pb {
-      font-size: 46px;
-      font-weight: 800;
-      letter-spacing: -1px;
-      line-height: 1.1;
-    }
-    .rival-meta { font-size: 12px; color: var(--subtle); margin-top: 4px; }
-    .rival-sub  { font-size: 11px; color: var(--muted); margin-top: 4px; }
-    .rival-delta {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-    .delta-behind { background: rgba(234,179,8,.15); color: var(--warn); }
-    .delta-ahead  { background: rgba(34,197,94,.15);  color: var(--target); }
-    .louis-snark {
-      margin-top: 12px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: rgba(59,130,246,.07);
-      border-left: 3px solid var(--louis);
-      font-size: 13px;
-      color: #94a3b8;
-      font-style: italic;
-      line-height: 1.5;
-    }
-
-    /* ── Charts ── */
-    .chart-wrap { position: relative; }
-
-    /* ── Plan / Future Runs ── */
-    .plan-week {
-      margin-bottom: 18px;
-    }
-    .plan-week-title {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--jack);
-      margin-bottom: 8px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .plan-week-title .parkrun-target {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 4px;
-      background: rgba(34,197,94,.1);
-      color: var(--target);
-    }
-    .plan-week-title .parkrun-target.overtake {
-      background: rgba(249,115,22,.15);
-      color: var(--jack);
-    }
-    .plan-session {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 7px 0;
-    }
-    .plan-session + .plan-session {
-      border-top: 1px solid rgba(30,32,48,.5);
-    }
-    .session-badge {
-      flex-shrink: 0;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-top: 1px;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-    }
-    .badge-intervals { background: rgba(249,115,22,.15); color: var(--jack); }
-    .badge-easy      { background: rgba(59,130,246,.12); color: #60a5fa; }
-    .badge-parkrun   { background: rgba(34,197,94,.12);  color: var(--target); }
-    .session-text { font-size: 13px; color: var(--text); line-height: 1.4; }
-    .session-meta { font-size: 11px; color: var(--subtle); margin-top: 2px; }
-
-    .next-up-card {
-      background: linear-gradient(135deg, rgba(249,115,22,.08), rgba(249,115,22,.03));
-      border: 1px solid rgba(249,115,22,.25);
-    }
-    .next-up-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 0;
-    }
-    .next-up-item + .next-up-item { border-top: 1px solid rgba(249,115,22,.1); }
-    .next-up-date {
-      font-size: 11px;
-      color: var(--subtle);
-      min-width: 52px;
-    }
-    .next-up-desc { font-size: 13px; font-weight: 500; }
-    .next-up-target { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--jack); }
-
-    /* ── Sleep ── */
-    .sleep-row { margin-bottom: 14px; }
-    .sleep-row-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 4px;
-    }
-    .sleep-date { font-size: 12px; color: var(--subtle); }
-    .sleep-total { font-size: 14px; font-weight: 700; }
-    .sleep-bb { font-size: 12px; font-weight: 600; }
-    .sleep-stage { display: flex; height: 8px; border-radius: 4px; overflow: hidden; gap: 2px; }
-    .stage-deep  { background: #6366f1; }
-    .stage-light { background: #64748b; }
-    .stage-rem   { background: #a78bfa; }
-    .stage-wake  { background: var(--warn); }
-    .sleep-detail { font-size: 11px; color: var(--subtle); margin-top: 3px; }
-
-    /* ── Runs table ── */
-    .run-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .run-table th {
-      text-align: left;
-      padding: 6px 10px;
-      color: var(--subtle);
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      border-bottom: 1px solid var(--border);
-    }
-    .run-table td { padding: 9px 10px; border-bottom: 1px solid rgba(30,32,48,.6); vertical-align: middle; }
-    .run-table tr:last-child td { border-bottom: none; }
-    .run-table tr:hover td { background: rgba(255,255,255,.02); }
-    .pace-pill {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 12px;
-    }
-    .pace-great { background: rgba(34,197,94,.15); color: var(--target); }
-    .pace-good  { background: rgba(249,115,22,.15); color: var(--jack); }
-    .pace-ok    { background: rgba(234,179,8,.12);  color: var(--warn); }
-    .pace-easy  { background: rgba(122,127,154,.12); color: var(--subtle); }
-    .pr-badge {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 1px 5px;
-      border-radius: 3px;
-      background: rgba(249,115,22,.2);
-      color: var(--jack);
-      margin-left: 4px;
-    }
-    .seg-badge {
-      font-size: 9px;
-      font-weight: 600;
-      padding: 1px 4px;
-      border-radius: 3px;
-      background: rgba(34,197,94,.12);
-      color: var(--target);
-      margin-left: 4px;
-      vertical-align: middle;
-    }
-    .table-note {
-      font-size: 11px;
-      color: var(--muted);
-      padding: 8px 10px 0;
-    }
-
-    /* ── Legend ── */
-    .legend { display: flex; gap: 14px; flex-wrap: wrap; }
-    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--subtle); }
-    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-    /* ── Footer ── */
-    footer {
-      text-align: center;
-      font-size: 11px;
-      color: var(--muted);
-      padding: 20px 0 8px;
-      line-height: 1.8;
-    }
-    footer a { color: var(--subtle); text-decoration: none; }
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;min-height:100vh;padding:24px;max-width:1100px;margin:0 auto}
+    .grid{display:grid;gap:16px} .col-2{grid-template-columns:1fr 1fr} .col-3{grid-template-columns:1fr 1fr 1fr}
+    @media(max-width:860px){.col-2,.col-3{grid-template-columns:1fr}}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+    .card-label{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--subtle);margin-bottom:10px}
+    .section-title{font-size:11px;font-weight:700;color:var(--subtle);text-transform:uppercase;letter-spacing:.1em;margin:24px 0 10px}
+    header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:16px}
+    header h1{font-size:24px;font-weight:800;line-height:1.2} header h1 span{color:var(--target)}
+    .sync-badge{font-size:11px;color:var(--subtle);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 12px;white-space:nowrap;flex-shrink:0}
+    .sync-badge b{color:var(--target)}
+    .intro-banner{background:linear-gradient(135deg,rgba(249,115,22,.07),rgba(34,197,94,.05));border:1px solid rgba(249,115,22,.2);border-radius:var(--radius);padding:18px 22px;margin-bottom:16px;font-size:14px;line-height:1.7}
+    .intro-banner p+p{margin-top:8px} .intro-banner strong{color:var(--jack)} .intro-banner em{color:var(--subtle);font-style:normal}
+    .hero-card{padding:24px}
+    .hero-times{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+    .hero-time-big{font-size:60px;font-weight:800;letter-spacing:-2px;color:var(--jack);line-height:1}
+    .hero-time-sub{font-size:12px;color:var(--subtle);margin-top:4px}
+    .hero-gap{text-align:right} .hero-gap-num{font-size:30px;font-weight:700;color:var(--warn)} .hero-gap-sub{font-size:12px;color:var(--subtle)}
+    .progress-track{position:relative;height:14px;background:var(--muted);border-radius:7px;margin:14px 0 26px}
+    .progress-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--jack-dim),var(--jack));position:relative}
+    .progress-fill::after{content:'';position:absolute;right:-1px;top:-3px;width:20px;height:20px;background:var(--jack);border-radius:50%;border:3px solid var(--bg)}
+    .target-line{position:absolute;right:0;top:-4px;width:3px;height:22px;background:var(--target);border-radius:2px}
+    .milestone-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:var(--muted);border:2px solid var(--border)}
+    .progress-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--subtle);margin-top:-20px}
+    .stats-row{display:flex;gap:20px;flex-wrap:wrap;margin-top:14px}
+    .stat-item{flex:1;min-width:70px} .stat-val{font-size:20px;font-weight:700} .stat-lbl{font-size:11px;color:var(--subtle);margin-top:2px}
+    .rival-card{position:relative;overflow:hidden}
+    .rival-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+    .rival-jack::before{background:var(--jack)} .rival-louis::before{background:var(--louis)}
+    .rival-name{font-size:17px;font-weight:800;margin-bottom:2px}
+    .rival-jack .rival-name{color:var(--jack)} .rival-louis .rival-name{color:var(--louis)}
+    .rival-pb{font-size:46px;font-weight:800;letter-spacing:-1px;line-height:1.1}
+    .rival-meta{font-size:12px;color:var(--subtle);margin-top:4px} .rival-sub{font-size:11px;color:var(--muted);margin-top:4px}
+    .rival-delta{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+    .delta-behind{background:rgba(234,179,8,.15);color:var(--warn)} .delta-ahead{background:rgba(34,197,94,.15);color:var(--target)}
+    .louis-snark{margin-top:12px;padding:10px 12px;border-radius:8px;background:rgba(59,130,246,.07);border-left:3px solid var(--louis);font-size:13px;color:#94a3b8;font-style:italic;line-height:1.5}
+    .chart-wrap{position:relative}
+    .next-up-card{background:linear-gradient(135deg,rgba(249,115,22,.08),rgba(249,115,22,.03));border:1px solid rgba(249,115,22,.25)}
+    .next-up-item{display:flex;align-items:center;gap:12px;padding:10px 0}
+    .next-up-item+.next-up-item{border-top:1px solid rgba(249,115,22,.1)}
+    .next-up-date{font-size:11px;color:var(--subtle);min-width:52px}
+    .next-up-desc{font-size:13px;font-weight:500} .session-meta{font-size:11px;color:var(--subtle);margin-top:2px}
+    .session-badge{flex-shrink:0;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:1px;letter-spacing:.04em;text-transform:uppercase}
+    .badge-intervals{background:rgba(249,115,22,.15);color:var(--jack)}
+    .badge-easy{background:rgba(59,130,246,.12);color:#60a5fa}
+    .badge-parkrun{background:rgba(34,197,94,.12);color:var(--target)}
+    .plan-week{margin-bottom:18px}
+    .plan-week-title{font-size:12px;font-weight:700;color:var(--jack);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .parkrun-target{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(34,197,94,.1);color:var(--target)}
+    .parkrun-target.overtake{background:rgba(249,115,22,.15);color:var(--jack)}
+    .plan-session{display:flex;align-items:flex-start;gap:10px;padding:7px 0}
+    .plan-session+.plan-session{border-top:1px solid rgba(30,32,48,.5)}
+    .session-text{font-size:13px;color:var(--text);line-height:1.4}
+    .sleep-row{margin-bottom:14px}
+    .sleep-row-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+    .sleep-date{font-size:12px;color:var(--subtle)} .sleep-total{font-size:14px;font-weight:700} .sleep-bb{font-size:12px;font-weight:600}
+    .sleep-stage{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px}
+    .stage-deep{background:#6366f1} .stage-light{background:#64748b} .stage-rem{background:#a78bfa} .stage-wake{background:var(--warn)}
+    .sleep-detail{font-size:11px;color:var(--subtle);margin-top:3px}
+    .run-table{width:100%;border-collapse:collapse;font-size:13px}
+    .run-table th{text-align:left;padding:6px 10px;color:var(--subtle);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+    .run-table td{padding:9px 10px;border-bottom:1px solid rgba(30,32,48,.6);vertical-align:middle}
+    .run-table tr:last-child td{border-bottom:none} .run-table tr:hover td{background:rgba(255,255,255,.02)}
+    .pace-pill{display:inline-block;padding:2px 8px;border-radius:4px;font-weight:600;font-size:12px}
+    .pace-great{background:rgba(34,197,94,.15);color:var(--target)} .pace-good{background:rgba(249,115,22,.15);color:var(--jack)}
+    .pace-ok{background:rgba(234,179,8,.12);color:var(--warn)} .pace-easy{background:rgba(122,127,154,.12);color:var(--subtle)}
+    .pr-badge{font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(249,115,22,.2);color:var(--jack);margin-left:4px}
+    .seg-badge{font-size:9px;font-weight:600;padding:1px 4px;border-radius:3px;background:rgba(34,197,94,.12);color:var(--target);margin-right:3px}
+    .table-note{font-size:11px;color:var(--muted);padding:8px 10px 0}
+    .legend{display:flex;gap:14px;flex-wrap:wrap}
+    .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--subtle)}
+    .legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    footer{text-align:center;font-size:11px;color:var(--muted);padding:20px 0 8px;line-height:1.8}
+    .map-card{padding:0;overflow:hidden}
+    .map-header{padding:14px 20px 12px;display:flex;align-items:center;gap:16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+    .map-title{font-size:15px;font-weight:700}
+    .map-subtitle{font-size:12px;color:var(--subtle);margin-top:2px}
+    .map-stats{margin-left:auto;display:flex;gap:20px;flex-wrap:wrap}
+    .map-stat{text-align:right}
+    .map-stat-val{font-size:14px;font-weight:700}
+    .map-stat-lbl{font-size:10px;color:var(--subtle);text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
+    #runMap{height:300px;width:100%;background:#08090d}
+    .leaflet-container{background:#08090d !important}
+    .leaflet-control-attribution{display:none !important}
+    .leaflet-bar a{background:#111218 !important;color:var(--text) !important;border-color:#1e2030 !important}
+    .leaflet-bar a:hover{background:#1e2030 !important}
   </style>
 </head>
 <body>
 
-<!-- ── Header ── -->
 <header>
   <div>
     <h1>Jack vs Louis &mdash; <span>Sub-20 5k</span></h1>
@@ -379,31 +112,28 @@
   <div class="sync-badge">Synced: <b>May 22, 2026</b></div>
 </header>
 
-<!-- ── Noble Crusade Intro ── -->
 <div class="intro-banner">
-  <p>For too long, <strong>Louis</strong> has occupied a smug position as the faster Sibley. This ends. Jack is on a structured, data-backed, entirely serious campaign to run a 5k in under 20 minutes — which would, incidentally, comprehensively end Louis's reign at the top of the family fitness charts.</p>
-  <p>Jack started from <strong>27:11</strong> in January 2025. He's now at <strong>25:52</strong>, shaving time off with each outing, training with intent, and logging more miles per month than he has in years. Louis, meanwhile, <em>has apparently been "almost at 20 minutes" for the better part of a year</em>. The gap is closing. The plan is live. The scoreboard is below.</p>
+  <p>For too long, <strong>Louis</strong> has occupied a smug position as the faster Sibley. This ends. Jack is on a structured, data-backed, entirely serious campaign to run a 5k in under 20 minutes &mdash; which would, incidentally, comprehensively end Louis&rsquo;s reign at the top of the family fitness charts.</p>
+  <p>Jack started from <strong>27:11</strong> in January 2025. He&rsquo;s now at <strong>25:52</strong>, shaving time off with each outing, training with intent, and logging more miles per month than he has in years. Louis, meanwhile, <em>has apparently been &ldquo;almost at 20 minutes&rdquo; for the better part of a year</em>. The gap is closing. The plan is live. The scoreboard is below.</p>
 </div>
 
-<!-- ── 5k Goal Progress ── -->
 <div class="card hero-card" style="margin-bottom:16px">
-  <div class="card-label">5k Goal Progress — Strava Best Effort Splits</div>
+  <div class="card-label">5k Goal Progress &mdash; Strava Best Effort Splits</div>
   <div class="hero-times">
     <div>
       <div class="hero-time-big">25:52</div>
-      <div class="hero-time-sub">Current best effort &nbsp;·&nbsp; May 9, 2026 &nbsp;·&nbsp; Canterbury</div>
+      <div class="hero-time-sub">Current best effort &nbsp;&middot;&nbsp; 2026-05-09 &nbsp;&middot;&nbsp; Strava segment</div>
     </div>
     <div class="hero-gap">
-      <div class="hero-gap-num">−5:52</div>
-      <div class="hero-gap-sub">still to cut &nbsp;·&nbsp; need 1:10/km faster</div>
+      <div class="hero-gap-num">&minus;5:52</div>
+      <div class="hero-gap-sub">still to cut &nbsp;&middot;&nbsp; need 1:10/km faster</div>
     </div>
   </div>
-  <!-- Range: 27:11 (1631s) → 20:00 (1200s) = 431s. Current: 25:52 (1552s). Progress: 79/431 = 18.3% -->
   <div class="progress-track">
     <div class="progress-fill" style="width:18.3%"></div>
-    <div class="milestone-dot" style="left:34%"  title="25:00"></div>
-    <div class="milestone-dot" style="left:58%"  title="23:00"></div>
-    <div class="milestone-dot" style="left:79%"  title="21:30"></div>
+    <div class="milestone-dot" style="left:34%"></div>
+    <div class="milestone-dot" style="left:58%"></div>
+    <div class="milestone-dot" style="left:79%"></div>
     <div class="target-line"></div>
   </div>
   <div class="progress-labels">
@@ -411,44 +141,25 @@
     <span style="color:var(--muted)">25:00</span>
     <span style="color:var(--muted)">23:00</span>
     <span style="color:var(--muted)">21:30</span>
-    <span style="color:var(--target)">20:00 ✦</span>
+    <span style="color:var(--target)">20:00 &#10022;</span>
   </div>
   <div class="stats-row">
-    <div class="stat-item">
-      <div class="stat-val" style="color:var(--jack)">5:10<span style="font-size:13px;font-weight:400">/km</span></div>
-      <div class="stat-lbl">Current pace</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val" style="color:var(--target)">4:00<span style="font-size:13px;font-weight:400">/km</span></div>
-      <div class="stat-lbl">Target pace</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val">1:19</div>
-      <div class="stat-lbl">Saved since Jan '25</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val">25</div>
-      <div class="stat-lbl">Runs YTD</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val">138<span style="font-size:13px;font-weight:400">km</span></div>
-      <div class="stat-lbl">Distance YTD</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-val">56<span style="font-size:13px;font-weight:400">km</span></div>
-      <div class="stat-lbl">Last 4 weeks</div>
-    </div>
+    <div class="stat-item"><div class="stat-val" style="color:var(--jack)">5:10<span style="font-size:13px;font-weight:400">/km</span></div><div class="stat-lbl">Current pace</div></div>
+    <div class="stat-item"><div class="stat-val" style="color:var(--target)">4:00<span style="font-size:13px;font-weight:400">/km</span></div><div class="stat-lbl">Target pace</div></div>
+    <div class="stat-item"><div class="stat-val">1:19</div><div class="stat-lbl">Saved since Jan &rsquo;25</div></div>
+    <div class="stat-item"><div class="stat-val">25</div><div class="stat-lbl">Runs YTD</div></div>
+    <div class="stat-item"><div class="stat-val">138.5<span style="font-size:13px;font-weight:400">km</span></div><div class="stat-lbl">Distance YTD</div></div>
+    <div class="stat-item"><div class="stat-val">56.2<span style="font-size:13px;font-weight:400">km</span></div><div class="stat-lbl">Last 4 weeks</div></div>
   </div>
 </div>
 
-<!-- ── The Race ── -->
 <p class="section-title">The Race</p>
 <div class="grid col-2" style="margin-bottom:16px">
   <div class="card rival-card rival-jack">
     <div class="rival-name">Jack</div>
     <div class="rival-pb">25:52</div>
-    <div class="rival-meta">5:10 /km &nbsp;·&nbsp; Canterbury, May 9, 2026 &nbsp;·&nbsp; Strava best effort</div>
-    <div class="rival-sub">All-time Garmin record: 24:44 (Aug 2023, Waltham Forest) — it's in there somewhere</div>
+    <div class="rival-meta">5:10 /km &nbsp;&middot;&nbsp; 2026-05-09 &nbsp;&middot;&nbsp; Strava best effort</div>
+    <div class="rival-sub">All-time Garmin record: 24:44 (Aug 2023, Waltham Forest) &mdash; it&rsquo;s in there somewhere</div>
     <div class="rival-delta delta-behind">5:52 from goal</div>
   </div>
   <div class="card rival-card rival-louis">
@@ -457,271 +168,182 @@
     <div class="rival-meta" style="color:var(--subtle)">Minutes. Apparently. Give or take.</div>
     <div class="rival-delta delta-behind" style="opacity:.5">~1 min from goal (?)</div>
     <div class="louis-snark">
-      Stuck somewhere in the low 21s, from what we hear — usually accompanied by a story about a slightly dodgy calf, a hilly route, or the wind being "completely against him". Could break 20 any day now. Has been saying this since roughly late 2024. Bless.
+      Stuck somewhere in the low 21s, from what we hear &mdash; usually accompanied by a story about a slightly dodgy calf, a hilly route, or the wind being &ldquo;completely against him&rdquo;. Could break 20 any day now. Has been saying this since roughly late 2024. Bless.
     </div>
   </div>
 </div>
 
-<!-- ── Pace Trend Chart ── -->
+
+<p class="section-title">Latest Run</p>
+<div class="card map-card" style="margin-bottom:16px">
+  <div class="map-header">
+    <div>
+      <div class="map-title">Morning Run</div>
+      <div class="map-subtitle">May 9, 2026</div>
+    </div>
+    <div class="map-stats">
+      <div class="map-stat"><div class="map-stat-val" style="color:var(--jack)">5.02<span style="font-size:11px;font-weight:400">km</span></div><div class="map-stat-lbl">Distance</div></div>
+      <div class="map-stat"><div class="map-stat-val">25:52</div><div class="map-stat-lbl">5k split</div></div>
+      <div class="map-stat"><div class="map-stat-val" style="color:var(--jack)">5:10</div><div class="map-stat-lbl">Pace /km</div></div>
+      <div class="map-stat"><div class="map-stat-val">+81<span style="font-size:11px;font-weight:400">m</span></div><div class="map-stat-lbl">Elevation</div></div>
+      <div class="map-stat"><div class="map-stat-val">182</div><div class="map-stat-lbl">Avg HR</div></div>
+    </div>
+  </div>
+  <div id="runMap"></div>
+</div>
+
 <p class="section-title">5k Best Effort Progression</p>
 <div class="card" style="margin-bottom:16px">
   <div class="card-label">Strava 5k segment splits over time &mdash; toward 20:00</div>
-  <div class="chart-wrap" style="height:210px">
-    <canvas id="paceChart"></canvas>
-  </div>
+  <div class="chart-wrap" style="height:210px"><canvas id="paceChart"></canvas></div>
   <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <div class="legend">
       <div class="legend-item"><div class="legend-dot" style="background:var(--jack)"></div> Jack (Strava best efforts)</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--louis);opacity:.5;border:1px dashed var(--louis)"></div> Louis (~21:00)</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--target)"></div> Sub-20 target</div>
     </div>
-    <div style="font-size:11px;color:var(--subtle)">79s saved &nbsp;·&nbsp; 352s to go</div>
+    <div style="font-size:11px;color:var(--subtle)">1:19 saved &nbsp;&middot;&nbsp; 5:52 to go</div>
   </div>
 </div>
 
-<!-- ── The Plan (from Notion) ── -->
-<p class="section-title">The Plan &mdash; 8-Week Programme <span style="font-weight:400;color:var(--muted)">(from Notion / Running Plan)</span></p>
-
-<!-- Next up -->
+<p class="section-title">The Plan &mdash; 8-Week Programme <span style="font-weight:400;color:var(--muted)">(Notion not configured — set NOTION_TOKEN)</span></p>
 <div class="card next-up-card" style="margin-bottom:16px">
   <div class="card-label" style="color:var(--jack)">Coming up this week</div>
   <div class="next-up-item">
     <div class="session-badge badge-intervals">Intervals</div>
-    <div>
-      <div class="next-up-desc">10 × 400m @ 4:40/km &nbsp;·&nbsp; 200m jog recoveries</div>
-      <div class="session-meta">Target: 1:52 per rep</div>
-    </div>
+    <div><div class="next-up-desc">10 &times; 400m @ 4:40/km &nbsp;&middot;&nbsp; 200m jog recoveries</div><div class="session-meta">Target: 1:52 per rep</div></div>
     <div class="next-up-date">Tue May 27</div>
   </div>
   <div class="next-up-item">
     <div class="session-badge badge-easy">Easy</div>
-    <div>
-      <div class="next-up-desc">5km easy @ 6:05/km</div>
-      <div class="session-meta">Recovery effort</div>
-    </div>
+    <div><div class="next-up-desc">5km easy @ 6:05/km</div><div class="session-meta">Recovery effort</div></div>
     <div class="next-up-date">Thu May 29</div>
   </div>
   <div class="next-up-item">
     <div class="session-badge badge-parkrun">Parkrun</div>
-    <div>
-      <div class="next-up-desc">Parkrun — target 24:12</div>
-      <div class="session-meta">4:50/km &nbsp;·&nbsp; Week 1 test</div>
-    </div>
+    <div><div class="next-up-desc">Parkrun &mdash; target 24:12</div><div class="session-meta">4:50/km &nbsp;&middot;&nbsp; Week 1 test</div></div>
     <div class="next-up-date">Sat May 31</div>
   </div>
 </div>
 
-<!-- 8-week Parkrun target chart -->
 <div class="card" style="margin-bottom:16px">
   <div class="card-label">Parkrun target progression &mdash; when does Jack pass Louis?</div>
-  <div class="chart-wrap" style="height:210px">
-    <canvas id="planChart"></canvas>
-  </div>
+  <div class="chart-wrap" style="height:210px"><canvas id="planChart"></canvas></div>
   <div style="margin-top:10px;font-size:12px;color:var(--subtle);text-align:center">
-    📍 Louis overtaken at <strong style="color:var(--jack)">Week 7 (July 11)</strong> — assuming he stays stuck at ~21:00
+    &#128205; Louis overtaken at <strong style="color:var(--jack)">Week 7 (July 11)</strong> &mdash; assuming he stays stuck at ~21:00
   </div>
 </div>
 
-<!-- Week-by-week breakdown -->
 <div class="grid col-2" style="margin-bottom:16px">
-
   <div class="card">
-    <div class="card-label">Weeks 1–4</div>
-    <div class="plan-week">
-      <div class="plan-week-title">
-        Week 1 &nbsp;·&nbsp; May 26–31
-        <span class="parkrun-target">Parkrun: 24:12</span>
-      </div>
-      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">10 × 400m @ 4:40/km</div><div class="session-meta">Tue May 27</div></div></div>
+    <div class="card-label">Weeks 1&ndash;4</div>
+    <div class="plan-week"><div class="plan-week-title">Week 1 &nbsp;&middot;&nbsp; May 26&ndash;31<span class="parkrun-target">Parkrun: 24:12</span></div>
+      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">10 &times; 400m @ 4:40/km</div><div class="session-meta">Tue May 27</div></div></div>
       <div class="plan-session"><span class="session-badge badge-easy">Easy</span><div><div class="session-text">5km @ 6:05/km</div><div class="session-meta">Thu May 29</div></div></div>
-      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 24:12</div><div class="session-meta">Sat May 31</div></div></div>
-    </div>
-    <div class="plan-week">
-      <div class="plan-week-title">
-        Week 2 &nbsp;·&nbsp; Jun 2–7
-        <span class="parkrun-target">Parkrun: 23:29</span>
-      </div>
-      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">8 × 400m @ 4:32/km</div><div class="session-meta">Tue Jun 3</div></div></div>
+      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 24:12</div><div class="session-meta">Sat May 31</div></div></div></div>
+    <div class="plan-week"><div class="plan-week-title">Week 2 &nbsp;&middot;&nbsp; Jun 2&ndash;7<span class="parkrun-target">Parkrun: 23:29</span></div>
+      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">8 &times; 400m @ 4:32/km</div><div class="session-meta">Tue Jun 3</div></div></div>
       <div class="plan-session"><span class="session-badge badge-easy">Easy</span><div><div class="session-text">5.5km @ 5:57/km</div><div class="session-meta">Thu Jun 5</div></div></div>
-      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 23:29</div><div class="session-meta">Sat Jun 7</div></div></div>
-    </div>
-    <div class="plan-week">
-      <div class="plan-week-title">
-        Week 3 &nbsp;·&nbsp; Jun 9–14
-        <span class="parkrun-target">Parkrun: 22:50</span>
-      </div>
-      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">6 × 600m @ 4:24/km</div><div class="session-meta">Tue Jun 10</div></div></div>
+      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 23:29</div><div class="session-meta">Sat Jun 7</div></div></div></div>
+    <div class="plan-week"><div class="plan-week-title">Week 3 &nbsp;&middot;&nbsp; Jun 9&ndash;14<span class="parkrun-target">Parkrun: 22:50</span></div>
+      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">6 &times; 600m @ 4:24/km</div><div class="session-meta">Tue Jun 10</div></div></div>
       <div class="plan-session"><span class="session-badge badge-easy">Easy</span><div><div class="session-text">6km @ 5:49/km</div><div class="session-meta">Thu Jun 12</div></div></div>
-      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 22:50</div><div class="session-meta">Sat Jun 14</div></div></div>
-    </div>
-    <div class="plan-week" style="margin-bottom:0">
-      <div class="plan-week-title">
-        Week 4 &nbsp;·&nbsp; Jun 16–21
-        <span class="parkrun-target">Parkrun: 22:15</span>
-      </div>
-      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">5 × 800m @ 4:18/km</div><div class="session-meta">Tue Jun 17</div></div></div>
+      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 22:50</div><div class="session-meta">Sat Jun 14</div></div></div></div>
+    <div class="plan-week" style="margin-bottom:0"><div class="plan-week-title">Week 4 &nbsp;&middot;&nbsp; Jun 16&ndash;21<span class="parkrun-target">Parkrun: 22:15</span></div>
+      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">5 &times; 800m @ 4:18/km</div><div class="session-meta">Tue Jun 17</div></div></div>
       <div class="plan-session"><span class="session-badge badge-easy">Easy</span><div><div class="session-text">6.5km @ 5:42/km</div><div class="session-meta">Thu Jun 19</div></div></div>
-      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 22:15</div><div class="session-meta">Sat Jun 21</div></div></div>
-    </div>
+      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 22:15</div><div class="session-meta">Sat Jun 21</div></div></div></div>
   </div>
-
   <div class="card">
-    <div class="card-label">Weeks 5–8</div>
-    <div class="plan-week">
-      <div class="plan-week-title">
-        Week 5 &nbsp;·&nbsp; Jun 23–28
-        <span class="parkrun-target">Parkrun: 21:45</span>
-      </div>
+    <div class="card-label">Weeks 5&ndash;8</div>
+    <div class="plan-week"><div class="plan-week-title">Week 5 &nbsp;&middot;&nbsp; Jun 23&ndash;28<span class="parkrun-target">Parkrun: 21:45</span></div>
       <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">Pyramid: 400/800/1200/800/400m @ 4:12/km</div><div class="session-meta">Tue Jun 24</div></div></div>
       <div class="plan-session"><span class="session-badge badge-easy">Easy</span><div><div class="session-text">7km @ 5:36/km</div><div class="session-meta">Thu Jun 26</div></div></div>
-      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 21:45</div><div class="session-meta">Sat Jun 28</div></div></div>
-    </div>
-    <div class="plan-week">
-      <div class="plan-week-title">
-        Week 6 &nbsp;·&nbsp; Jun 30–Jul 5
-        <span class="parkrun-target">Parkrun: 21:19</span>
-      </div>
-      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">5 × 1km @ 4:08/km</div><div class="session-meta">Tue Jul 1</div></div></div>
+      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 21:45</div><div class="session-meta">Sat Jun 28</div></div></div></div>
+    <div class="plan-week"><div class="plan-week-title">Week 6 &nbsp;&middot;&nbsp; Jun 30&ndash;Jul 5<span class="parkrun-target">Parkrun: 21:19</span></div>
+      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">5 &times; 1km @ 4:08/km</div><div class="session-meta">Tue Jul 1</div></div></div>
       <div class="plan-session"><span class="session-badge badge-easy">Easy</span><div><div class="session-text">7km @ 5:31/km</div><div class="session-meta">Thu Jul 3</div></div></div>
-      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 21:19</div><div class="session-meta">Sat Jul 5</div></div></div>
-    </div>
-    <div class="plan-week">
-      <div class="plan-week-title" style="color:var(--jack)">
-        Week 7 &nbsp;·&nbsp; Jul 7–12 &nbsp;🎯
-        <span class="parkrun-target overtake">Parkrun: 20:57 — Louis crossed</span>
-      </div>
-      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">12 × 400m @ 4:03/km</div><div class="session-meta">Tue Jul 8</div></div></div>
+      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 21:19</div><div class="session-meta">Sat Jul 5</div></div></div></div>
+    <div class="plan-week"><div class="plan-week-title" style="color:var(--jack)">Week 7 &nbsp;&middot;&nbsp; Jul 7&ndash;12 &#127919;<span class="parkrun-target overtake">Parkrun: 20:57 &mdash; Louis crossed</span></div>
+      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">12 &times; 400m @ 4:03/km</div><div class="session-meta">Tue Jul 8</div></div></div>
       <div class="plan-session"><span class="session-badge badge-easy">Easy</span><div><div class="session-text">7.5km @ 5:26/km</div><div class="session-meta">Thu Jul 10</div></div></div>
-      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 20:57</div><div class="session-meta">Sat Jul 12</div></div></div>
-    </div>
-    <div class="plan-week" style="margin-bottom:0">
-      <div class="plan-week-title">
-        Week 8 &nbsp;·&nbsp; Jul 14–19
-        <span class="parkrun-target" style="background:rgba(249,115,22,.15);color:var(--jack)">Parkrun: 20:40</span>
-      </div>
-      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">6 × 400m @ 4:00/km — goal pace</div><div class="session-meta">Tue Jul 15</div></div></div>
+      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 20:57</div><div class="session-meta">Sat Jul 12</div></div></div></div>
+    <div class="plan-week" style="margin-bottom:0"><div class="plan-week-title">Week 8 &nbsp;&middot;&nbsp; Jul 14&ndash;19<span class="parkrun-target overtake">Parkrun: 20:40</span></div>
+      <div class="plan-session"><span class="session-badge badge-intervals">Int</span><div><div class="session-text">6 &times; 400m @ 4:00/km &mdash; goal pace</div><div class="session-meta">Tue Jul 15</div></div></div>
       <div class="plan-session"><span class="session-badge badge-easy">Easy</span><div><div class="session-text">6km @ 5:23/km</div><div class="session-meta">Thu Jul 17</div></div></div>
-      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 20:40</div><div class="session-meta">Sat Jul 19</div></div></div>
-    </div>
+      <div class="plan-session"><span class="session-badge badge-parkrun">PR</span><div><div class="session-text">Parkrun target 20:40</div><div class="session-meta">Sat Jul 19</div></div></div></div>
   </div>
-
 </div>
 
-<!-- ── Weekly Volume ── -->
 <p class="section-title">Activity Volume</p>
-<div class="grid col-2" style="margin-bottom:16px">
-  <div class="card">
-    <div class="card-label">Weekly Distance (km)</div>
-    <div class="chart-wrap" style="height:170px"><canvas id="weeklyDistChart"></canvas></div>
-  </div>
-  <div class="card">
-    <div class="card-label">Weekly Run Count</div>
-    <div class="chart-wrap" style="height:170px"><canvas id="weeklyCountChart"></canvas></div>
-  </div>
+<div class="card" style="margin-bottom:16px">
+  <div class="card-label">Weekly Distance (km) &mdash; last 5 weeks</div>
+  <div class="chart-wrap" style="height:170px"><canvas id="weeklyDistChart"></canvas></div>
 </div>
 
-<!-- ── Health: Steps + Sleep ── -->
-<p class="section-title">Last 7 Days — Health</p>
+<p class="section-title">Last 7 Days &mdash; Health</p>
 <div class="grid col-2" style="margin-bottom:16px">
-
-  <!-- Steps -->
   <div class="card">
     <div class="card-label">Daily Steps</div>
     <div class="chart-wrap" style="height:170px"><canvas id="stepsChart"></canvas></div>
     <div class="stats-row" style="margin-top:14px">
-      <div class="stat-item">
-        <div class="stat-val">11,138</div>
-        <div class="stat-lbl">6-day avg</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-val">17,769</div>
-        <div class="stat-lbl">Best (May 21)</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-val" style="color:var(--warn)">2/6</div>
-        <div class="stat-lbl">Goal days met</div>
-      </div>
+      <div class="stat-item"><div class="stat-val">9,710</div><div class="stat-lbl">7-day avg</div></div>
+      <div class="stat-item"><div class="stat-val">17,769</div><div class="stat-lbl">Best (May 21)</div></div>
+      <div class="stat-item"><div class="stat-val" style="color:var(--warn)">2/7</div><div class="stat-lbl">Goal days met</div></div>
     </div>
   </div>
-
-  <!-- Sleep -->
   <div class="card">
-    <div class="card-label">Sleep Quality — Last 5 Nights</div>
-
-    <!-- May 18 -->
+    <div class="card-label">Sleep Quality &mdash; Last 5 Nights</div>
+    
     <div class="sleep-row">
       <div class="sleep-row-header">
         <span class="sleep-date">Mon May 18</span>
         <span class="sleep-total">10h 38m</span>
         <span class="sleep-bb" style="color:var(--target)">BB +64</span>
       </div>
-      <div class="sleep-stage">
-        <div class="stage-deep"  style="width:11.3%"></div>
-        <div class="stage-light" style="width:69.3%"></div>
-        <div class="stage-rem"   style="width:19.4%"></div>
-      </div>
+      <div class="sleep-stage"><div class="stage-deep"  style="width:11.1%"></div><div class="stage-light" style="width:68.2%"></div><div class="stage-rem"   style="width:19.1%"></div><div class="stage-wake"  style="width:1.5%"></div></div>
       <div class="sleep-detail">Deep 11% · REM 19% · HR avg 55bpm</div>
     </div>
 
-    <!-- May 19 -->
     <div class="sleep-row">
       <div class="sleep-row-header">
         <span class="sleep-date">Tue May 19</span>
         <span class="sleep-total">6h 31m</span>
         <span class="sleep-bb" style="color:var(--warn)">BB +44</span>
       </div>
-      <div class="sleep-stage">
-        <div class="stage-deep"  style="width:23.5%"></div>
-        <div class="stage-light" style="width:57.8%"></div>
-        <div class="stage-rem"   style="width:18.7%"></div>
-      </div>
-      <div class="sleep-detail">Deep 24% · REM 19% · HR avg 56bpm</div>
+      <div class="sleep-stage"><div class="stage-deep"  style="width:23.1%"></div><div class="stage-light" style="width:56.6%"></div><div class="stage-rem"   style="width:18.3%"></div><div class="stage-wake"  style="width:2.0%"></div></div>
+      <div class="sleep-detail">Deep 23% · REM 18% · HR avg 56bpm</div>
     </div>
 
-    <!-- May 20 -->
     <div class="sleep-row">
       <div class="sleep-row-header">
         <span class="sleep-date">Wed May 20</span>
         <span class="sleep-total">5h 54m</span>
         <span class="sleep-bb" style="color:var(--target)">BB +64</span>
       </div>
-      <div class="sleep-stage">
-        <div class="stage-light" style="width:75.4%"></div>
-        <div class="stage-rem"   style="width:24.6%"></div>
-      </div>
+      <div class="sleep-stage"><div class="stage-light" style="width:75.4%"></div><div class="stage-rem"   style="width:24.6%"></div></div>
       <div class="sleep-detail" style="color:var(--warn)">No deep sleep detected · HR avg 56bpm</div>
     </div>
 
-    <!-- May 21 -->
     <div class="sleep-row">
       <div class="sleep-row-header">
         <span class="sleep-date">Thu May 21</span>
         <span class="sleep-total">6h 12m</span>
         <span class="sleep-bb" style="color:var(--target)">BB +54</span>
       </div>
-      <div class="sleep-stage">
-        <div class="stage-deep"  style="width:23.1%"></div>
-        <div class="stage-light" style="width:50.8%"></div>
-        <div class="stage-rem"   style="width:26.1%"></div>
-      </div>
-      <div class="sleep-detail">Deep 23% · REM 26% · HR avg 59bpm</div>
+      <div class="sleep-stage"><div class="stage-deep"  style="width:23.1%"></div><div class="stage-light" style="width:50.8%"></div><div class="stage-rem"   style="width:26.1%"></div></div>
+      <div class="sleep-detail">Deep 23% · REM 26% · HR avg 58bpm</div>
     </div>
 
-    <!-- May 22 -->
-    <div class="sleep-row" style="margin-bottom:0">
+    <div class="sleep-row">
       <div class="sleep-row-header">
-        <span class="sleep-date">Fri May 22 (last night)</span>
+        <span class="sleep-date">Fri May 22</span>
         <span class="sleep-total">6h 50m</span>
         <span class="sleep-bb" style="color:var(--warn)">BB +38</span>
       </div>
-      <div class="sleep-stage">
-        <div class="stage-deep"  style="width:9.3%"></div>
-        <div class="stage-light" style="width:68%"></div>
-        <div class="stage-rem"   style="width:22.7%"></div>
-      </div>
-      <div class="sleep-detail">Deep 9% · REM 23% · HR avg 65bpm</div>
+      <div class="sleep-stage"><div class="stage-deep"  style="width:9.2%"></div><div class="stage-light" style="width:67.9%"></div><div class="stage-rem"   style="width:22.6%"></div><div class="stage-wake"  style="width:0.2%"></div></div>
+      <div class="sleep-detail">Deep 9% · REM 23% · HR avg 64bpm</div>
     </div>
-
     <div class="legend" style="margin-top:12px">
       <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div> Deep</div>
       <div class="legend-item"><div class="legend-dot" style="background:#64748b"></div> Light</div>
@@ -730,111 +352,104 @@
   </div>
 </div>
 
-<!-- ── Recent Runs Table ── -->
 <p class="section-title">Recent Runs</p>
 <div class="card" style="margin-bottom:4px;padding:12px 0 0">
   <table class="run-table">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Run</th>
-        <th>Dist</th>
-        <th>5k Split <span class="seg-badge">segment</span></th>
-        <th>Pace /km</th>
-        <th>Avg HR</th>
-        <th>Elev</th>
-      </tr>
-    </thead>
+    <thead><tr>
+      <th>Date</th><th>Run</th><th>Dist</th>
+      <th>5k Split <span class="seg-badge">seg</span></th>
+      <th>Pace /km</th><th>Avg HR</th><th>Elev</th>
+    </tr></thead>
     <tbody>
       <tr>
         <td>May 9</td>
-        <td>Canterbury <span class="pr-badge">PB</span></td>
+        <td>Canterbury Running <span class="pr-badge">PB</span></td>
         <td>5.02 km</td>
-        <td>25:52</td>
+        <td><span class="seg-badge">seg</span> 25:52</td>
         <td><span class="pace-pill pace-good">5:10</span></td>
         <td>183 bpm</td>
         <td>+67m</td>
       </tr>
       <tr>
         <td>May 4</td>
-        <td>Canterbury (long)</td>
+        <td>Canterbury Running</td>
         <td>12.05 km</td>
-        <td>—</td>
-        <td><span class="pace-pill pace-ok">5:57</span></td>
+        <td><span class="seg-badge">seg</span> 27:52</td>
+        <td><span class="pace-pill pace-ok">6:00</span></td>
         <td>161 bpm</td>
-        <td>+142m</td>
+        <td>+141m</td>
       </tr>
       <tr>
         <td>May 3</td>
-        <td>Canterbury</td>
+        <td>Canterbury Running</td>
         <td>6.04 km</td>
-        <td>—</td>
-        <td><span class="pace-pill pace-ok">5:39</span></td>
+        <td><span class="seg-badge">seg</span> 27:37</td>
+        <td><span class="pace-pill pace-ok">5:57</span></td>
         <td>164 bpm</td>
-        <td>+99m</td>
+        <td>+98m</td>
       </tr>
       <tr>
         <td>May 2</td>
-        <td>Canterbury</td>
+        <td>Canterbury Running</td>
         <td>5.01 km</td>
-        <td>25:53</td>
-        <td><span class="pace-pill pace-good">5:11</span></td>
+        <td><span class="seg-badge">seg</span> 25:53</td>
+        <td><span class="pace-pill pace-good">5:12</span></td>
         <td>180 bpm</td>
         <td>+46m</td>
       </tr>
       <tr>
         <td>May 1</td>
-        <td>Canterbury</td>
+        <td>Canterbury Running</td>
         <td>5.12 km</td>
-        <td>—</td>
+        <td><span class="seg-badge">seg</span> 27:15</td>
         <td><span class="pace-pill pace-ok">5:28</span></td>
         <td>167 bpm</td>
-        <td>+63m</td>
+        <td>+62m</td>
       </tr>
       <tr>
         <td>Apr 29</td>
-        <td>Hackney Night</td>
+        <td>Hackney Running</td>
         <td>6.05 km</td>
-        <td>—</td>
-        <td><span class="pace-pill pace-easy">6:27</span></td>
-        <td>146 bpm</td>
-        <td>+35m</td>
+        <td><span class="seg-badge">seg</span> 32:35</td>
+        <td><span class="pace-pill pace-easy">6:36</span></td>
+        <td>145 bpm</td>
+        <td>+34m</td>
+      </tr>
+      <tr>
+        <td>Apr 27</td>
+        <td>Canterbury Running</td>
+        <td>6.33 km</td>
+        <td><span class="seg-badge">seg</span> 31:55</td>
+        <td><span class="pace-pill pace-easy">6:35</span></td>
+        <td>149 bpm</td>
+        <td>+28m</td>
       </tr>
       <tr>
         <td>Apr 26</td>
-        <td>Canterbury</td>
+        <td>Canterbury Running</td>
         <td>5.54 km</td>
-        <td>26:42</td>
-        <td><span class="pace-pill pace-ok">5:29</span></td>
+        <td><span class="seg-badge">seg</span> 26:42</td>
+        <td><span class="pace-pill pace-ok">5:38</span></td>
         <td>164 bpm</td>
         <td>+95m</td>
       </tr>
       <tr>
         <td>Apr 25</td>
-        <td>Canterbury</td>
+        <td>Canterbury Running</td>
         <td>5.01 km</td>
-        <td>26:37</td>
-        <td><span class="pace-pill pace-ok">5:20</span></td>
+        <td><span class="seg-badge">seg</span> 26:37</td>
+        <td><span class="pace-pill pace-ok">5:19</span></td>
         <td>165 bpm</td>
         <td>+53m</td>
       </tr>
       <tr>
-        <td>Apr 18</td>
-        <td>Canterbury</td>
-        <td>5.01 km</td>
-        <td>—</td>
-        <td><span class="pace-pill pace-ok">5:28</span></td>
-        <td>172 bpm</td>
-        <td>+58m</td>
-      </tr>
-      <tr>
-        <td>Apr 13</td>
-        <td>Treadmill 10k</td>
-        <td>10.66 km</td>
-        <td>—</td>
-        <td><span class="pace-pill pace-good">5:18</span></td>
-        <td>167 bpm</td>
-        <td>—</td>
+        <td>Apr 21</td>
+        <td>Canterbury Running</td>
+        <td>6.02 km</td>
+        <td><span class="seg-badge">seg</span> 31:46</td>
+        <td><span class="pace-pill pace-easy">6:36</span></td>
+        <td>152 bpm</td>
+        <td>+79m</td>
       </tr>
     </tbody>
   </table>
@@ -842,221 +457,101 @@
 </div>
 
 <footer>
-  Data: Strava (best-effort segments) · Garmin Connect · Notion (Running Plan)<br>
-  Auto-synced daily at 04:00 · Louis's data: manual entry until he enters the modern age
+  Data: Strava (best-effort segments) &nbsp;&middot;&nbsp; Garmin Connect &nbsp;&middot;&nbsp; Notion (Running Plan)<br>
+  Auto-synced daily at 04:00 &nbsp;&middot;&nbsp; Louis&rsquo;s data: manual entry until he enters the modern age
 </footer>
 
 <script>
-Chart.defaults.color = '#7a7f9a';
-Chart.defaults.borderColor = '#1e2030';
-Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+Chart.defaults.color='#7a7f9a';
+Chart.defaults.borderColor='#1e2030';
+Chart.defaults.font.family='-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
+function mmss(s){const m=Math.floor(s/60);return m+':'+(s%60).toString().padStart(2,'0');}
 
-function secsToMMSS(s) {
-  if (!s) return '–';
-  const m = Math.floor(s / 60);
-  return `${m}:${String(s % 60).padStart(2,'0')}`;
-}
-
-// ── 5k Pace Trend ──
-// Strava best efforts: Jan 2025 → May 2026
-const paceLabels = ['Jan 11 \'25', 'Apr 25', 'Apr 26', 'May 2', 'May 9'];
-const jackTimes  = [1631, 1597, 1602, 1553, 1552];
-
-new Chart(document.getElementById('paceChart').getContext('2d'), {
-  type: 'line',
-  data: {
-    labels: paceLabels,
-    datasets: [
-      {
-        label: "Jack",
-        data: jackTimes,
-        borderColor: '#f97316',
-        backgroundColor: 'rgba(249,115,22,0.07)',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#f97316',
-        pointRadius: 5,
-        tension: 0.3,
-        fill: true,
-      },
-      {
-        label: 'Louis (~21:00)',
-        data: paceLabels.map(() => 1260),
-        borderColor: 'rgba(59,130,246,0.4)',
-        borderDash: [6,4],
-        borderWidth: 1.5,
-        pointRadius: 0,
-        fill: false,
-      },
-      {
-        label: '20:00 target',
-        data: paceLabels.map(() => 1200),
-        borderColor: '#22c55e',
-        borderDash: [4,3],
-        borderWidth: 1.5,
-        pointRadius: 0,
-        fill: false,
-      }
+new Chart(document.getElementById('paceChart'),{
+  type:'line',
+  data:{
+    labels:["2026-05-01", "2026-04-26", "2026-04-25", "2026-05-02", "2026-05-09"],
+    datasets:[
+      {label:"Jack",data:[1635, 1602, 1597, 1553, 1552],borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.07)',borderWidth:2.5,pointBackgroundColor:'#f97316',pointRadius:5,tension:0.3,fill:true},
+      {label:'Louis',data:["2026-05-01", "2026-04-26", "2026-04-25", "2026-05-02", "2026-05-09"].map(()=>1260),borderColor:'rgba(59,130,246,0.4)',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false},
+      {label:'Target',data:["2026-05-01", "2026-04-26", "2026-04-25", "2026-05-02", "2026-05-09"].map(()=>1200),borderColor:'#22c55e',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}
     ]
   },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    scales: {
-      y: {
-        min: 1150, max: 1700,
-        ticks: { callback: v => secsToMMSS(v), stepSize: 60 },
-        grid: { color: '#1e2030' }
-      },
-      x: { grid: { display: false } }
-    },
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: c => ' ' + secsToMMSS(c.raw) } }
-    }
+  options:{responsive:true,maintainAspectRatio:false,
+    scales:{y:{min:1150,max:1700,ticks:{callback:v=>mmss(v),stepSize:60},grid:{color:'#1e2030'}},x:{grid:{display:false}}},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>mmss(c.raw)}}}
   }
 });
 
-// ── Plan chart (Parkrun targets vs Louis vs sub-20) ──
-const planWeeks  = ['W1 May 31','W2 Jun 7','W3 Jun 14','W4 Jun 21','W5 Jun 28','W6 Jul 5','W7 Jul 12','W8 Jul 19'];
-const parkrunTargets = [1452, 1409, 1370, 1335, 1305, 1279, 1257, 1240];
-
-new Chart(document.getElementById('planChart').getContext('2d'), {
-  type: 'line',
-  data: {
-    labels: planWeeks,
-    datasets: [
-      {
-        label: 'Parkrun target',
-        data: parkrunTargets,
-        borderColor: '#f97316',
-        backgroundColor: 'rgba(249,115,22,0.06)',
-        borderWidth: 2.5,
-        pointBackgroundColor: parkrunTargets.map(v => v <= 1260 ? '#f97316' : '#f97316'),
-        pointRadius: 5,
-        tension: 0.3,
-        fill: true,
-      },
-      {
-        label: 'Louis (~21:00)',
-        data: planWeeks.map(() => 1260),
-        borderColor: 'rgba(59,130,246,0.5)',
-        borderDash: [6,4],
-        borderWidth: 2,
-        pointRadius: 0,
-        fill: false,
-      },
-      {
-        label: 'Sub-20 goal',
-        data: planWeeks.map(() => 1200),
-        borderColor: '#22c55e',
-        borderDash: [4,3],
-        borderWidth: 1.5,
-        pointRadius: 0,
-        fill: false,
-      }
+new Chart(document.getElementById('planChart'),{
+  type:'line',
+  data:{
+    labels:['W1 May 31','W2 Jun 7','W3 Jun 14','W4 Jun 21','W5 Jun 28','W6 Jul 5','W7 Jul 12','W8 Jul 19'],
+    datasets:[
+      {label:'Target',data:[1452,1409,1370,1335,1305,1279,1257,1240],borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.06)',borderWidth:2.5,pointRadius:5,tension:0.3,fill:true},
+      {label:'Louis',data:[1260,1260,1260,1260,1260,1260,1260,1260],borderColor:'rgba(59,130,246,0.5)',borderDash:[6,4],borderWidth:2,pointRadius:0,fill:false},
+      {label:'Goal',data:[1200,1200,1200,1200,1200,1200,1200,1200],borderColor:'#22c55e',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}
     ]
   },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    scales: {
-      y: {
-        min: 1150, max: 1500,
-        ticks: { callback: v => secsToMMSS(v), stepSize: 60 },
-        grid: { color: '#1e2030' }
-      },
-      x: { grid: { display: false } }
-    },
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: c => ' ' + secsToMMSS(c.raw) } },
-      annotation: {}
-    }
+  options:{responsive:true,maintainAspectRatio:false,
+    scales:{y:{min:1150,max:1500,ticks:{callback:v=>mmss(v),stepSize:60},grid:{color:'#1e2030'}},x:{grid:{display:false}}},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>mmss(c.raw)}}}
   }
 });
 
-// ── Weekly distance ──
-const weekLabels = ['Apr 7–13','Apr 14–20','Apr 21–27','Apr 28–May 4','May 5–9'];
-const weeklyKm   = [15.77, 15.32, 17.89, 29.22, 5.02];
-
-new Chart(document.getElementById('weeklyDistChart').getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: weekLabels,
-    datasets: [{
-      data: weeklyKm,
-      backgroundColor: weeklyKm.map((v,i) => i === weeklyKm.length-1 ? 'rgba(249,115,22,0.8)' : 'rgba(249,115,22,0.35)'),
-      borderRadius: 4,
+new Chart(document.getElementById('weeklyDistChart'),{
+  type:'bar',
+  data:{
+    labels:["Apr 20\u201326", "Apr 27\u20133", "May 4\u201310"],
+    datasets:[{
+      data:[16.6, 28.5, 17.1],
+      backgroundColor:[16.6, 28.5, 17.1].map((v,i,a)=>i===a.length-1?'rgba(249,115,22,0.8)':'rgba(249,115,22,0.35)'),
+      borderRadius:4
     }]
   },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      y: { grid: { color: '#1e2030' }, ticks: { callback: v => v+'km' } },
-      x: { grid: { display: false } }
-    }
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{y:{grid:{color:'#1e2030'},ticks:{callback:v=>v+'km'}},x:{grid:{display:false}}}
   }
 });
 
-// ── Weekly run count ──
-const weeklyCount = [4, 3, 4, 5, 1];
-
-new Chart(document.getElementById('weeklyCountChart').getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: weekLabels,
-    datasets: [{
-      data: weeklyCount,
-      backgroundColor: weeklyCount.map((v,i) => i === weeklyCount.length-1 ? 'rgba(249,115,22,0.8)' : 'rgba(249,115,22,0.35)'),
-      borderRadius: 4,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      y: { grid: { color: '#1e2030' }, ticks: { stepSize: 1 } },
-      x: { grid: { display: false } }
-    }
-  }
-});
-
-// ── Steps (May 17–22, fresh sync) ──
-const stepDates  = ['May 17','May 18','May 19','May 20','May 21','May 22'];
-const stepCounts = [5787, 9937, 12291, 10030, 17769, 11015];
-const stepGoals  = [12410, 11090, 10860, 11010, 10920, 11610];
-
-new Chart(document.getElementById('stepsChart').getContext('2d'), {
-  type: 'bar',
-  data: {
-    labels: stepDates,
-    datasets: [
-      {
-        label: 'Steps',
-        data: stepCounts,
-        backgroundColor: stepCounts.map((v,i) => v >= stepGoals[i] ? 'rgba(34,197,94,0.7)' : 'rgba(249,115,22,0.5)'),
-        borderRadius: 4,
-      },
-      {
-        label: 'Goal',
-        data: stepGoals,
-        type: 'line',
-        borderColor: 'rgba(234,179,8,0.5)',
-        borderDash: [4,3],
-        borderWidth: 1.5,
-        pointRadius: 0,
-        fill: false,
-      }
+new Chart(document.getElementById('stepsChart'),{
+  type:'bar',
+  data:{
+    labels:["May 15","May 17","May 18","May 19","May 20","May 21","May 22"],
+    datasets:[
+      {label:'Steps',data:[1146,5787,9937,12291,10030,17769,11015],backgroundColor:["rgba(249,115,22,0.5)","rgba(249,115,22,0.5)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)"],borderRadius:4},
+      {label:'Goal',data:[12410,12410,11090,10860,11010,10920,11610],type:'line',borderColor:'rgba(234,179,8,0.5)',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}
     ]
   },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      y: { grid: { color: '#1e2030' }, ticks: { callback: v => (v/1000).toFixed(0)+'k' } },
-      x: { grid: { display: false } }
-    }
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{y:{grid:{color:'#1e2030'},ticks:{callback:v=>(v/1000).toFixed(0)+'k'}},x:{grid:{display:false}}}
   }
 });
+</script>
+
+<script>
+(function() {
+  function decode(str) {
+    let i=0,lat=0,lng=0,out=[];
+    while(i<str.length){
+      let b,shift=0,res=0;
+      do{b=str.charCodeAt(i++)-63;res|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);
+      lat+=res&1?~(res>>1):res>>1;
+      shift=0;res=0;
+      do{b=str.charCodeAt(i++)-63;res|=(b&0x1f)<<shift;shift+=5;}while(b>=0x20);
+      lng+=res&1?~(res>>1):res>>1;
+      out.push([lat/1e5,lng/1e5]);
+    }
+    return out;
+  }
+  const coords=decode("{ibxHmnmEbAEL@NLTlBNjD?rIE^UN{@Ni@Vq@NgDdA]?qAg@u@c@}@[o@a@i@c@MGe@?WPe@JWJgARmAAyAFi@DY?m@Hu@@eCXw@Dm@JXEj@Of@ApCQvBYL@l@Cn@Qn@D|@?XGn@Wb@If@]j@Jn@XzA`Ad@b@hA\\PPLF\\CZKdAk@b@OJAd@MRAPHAHINMHm@Xc@NuAx@IH?NN`@TDr@OpAi@PKZYM_BCOACgAX{B|@g@FqA_@m@WeAk@k@e@_Ae@c@GGB_@^a@Pc@FyENsHf@g@Hs@AIBb@Eh@@dAGvAOpBMlASj@C~ABZG~Ac@NCXSd@CTLH?\\N\\^LDPP`@RZ\\RNr@LVTVHf@S~@URONEr@Sf@IBLAFYVe@Ro@ROJi@VYRCJHb@HHB@bAQb@Ov@a@^YGyBBCdAUHBDLDdBRtBJVxA]r@Sz@Qn@YDK@SIqDKe@UBm@PYPe@N_@Da@PAx@J`CA\\W\\_@TCEOwAOiC?a@^YDQBqGCsBIwAYaCO_@u@Eu@?");
+  const map=L.map('runMap',{zoomControl:true,scrollWheelZoom:false,dragging:true,doubleClickZoom:true});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_matter_no_labels/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd'}).addTo(map);
+  const route=L.polyline(coords,{color:'#f97316',weight:3.5,opacity:0.95,lineCap:'round',lineJoin:'round'}).addTo(map);
+  L.circleMarker(coords[0],{radius:7,fillColor:'#22c55e',color:'#08090d',weight:2.5,fillOpacity:1}).bindTooltip('Start',{permanent:false,direction:'right'}).addTo(map);
+  L.circleMarker(coords[coords.length-1],{radius:7,fillColor:'#ef4444',color:'#08090d',weight:2.5,fillOpacity:1}).bindTooltip('Finish',{permanent:false,direction:'right'}).addTo(map);
+  map.fitBounds(route.getBounds(),{padding:[24,24]});
+})();
 </script>
 </body>
 </html>
