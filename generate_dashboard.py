@@ -17,6 +17,7 @@ import requests
 # ─── Paths & config ────────────────────────────────────────────────────────
 GARMIN_DB         = Path.home() / ".garmin-givemydata" / "garmin.db"
 STRAVA_TOKENS     = Path.home() / ".strava-mcp" / "tokens.json"
+LOUIS_TOKENS      = Path.home() / ".strava-louis" / "tokens.json"
 STRAVA_CLIENT_ID  = "248666"
 STRAVA_CLIENT_SECRET = os.environ.get(
     "STRAVA_CLIENT_SECRET", "52a741de3d3257c5daaa2e9449fe2a5f35573c02"
@@ -32,8 +33,9 @@ LOUIS_SECS = 1260   # ~21:00
 
 # ─── Strava helpers ────────────────────────────────────────────────────────
 
-def strava_refresh():
-    tokens = json.loads(STRAVA_TOKENS.read_text())
+def strava_refresh(token_file=None):
+    token_file = Path(token_file) if token_file else STRAVA_TOKENS
+    tokens = json.loads(token_file.read_text())
     r = requests.post("https://www.strava.com/oauth/token", data={
         "client_id":     STRAVA_CLIENT_ID,
         "client_secret": STRAVA_CLIENT_SECRET,
@@ -47,7 +49,7 @@ def strava_refresh():
         "refresh_token": data["refresh_token"],
         "expires_at":    data["expires_at"],
     })
-    STRAVA_TOKENS.write_text(json.dumps(tokens, indent=2))
+    token_file.write_text(json.dumps(tokens, indent=2))
     return data["access_token"]
 
 
@@ -62,7 +64,7 @@ def strava_get(token, path, **params):
 
 
 def fetch_strava():
-    token = strava_refresh()
+    token = strava_refresh(STRAVA_TOKENS)
 
     # Recent activities
     activities = [
@@ -112,6 +114,43 @@ def fetch_strava():
         "best_efforts": best_efforts,
         "stats":        stats,
         "latest_map":   latest_map,
+    }
+
+
+def fetch_louis_strava():
+    """Fetch Louis's Strava data — same method as Jack's. Returns None if not yet connected."""
+    if not LOUIS_TOKENS.exists():
+        return None
+    token = strava_refresh(LOUIS_TOKENS)
+
+    activities = [
+        a for a in strava_get(token, "athlete/activities", per_page=50)
+        if a.get("sport_type") == "Run"
+    ]
+
+    # 5k best efforts — same scan as Jack
+    best_efforts = []
+    for act in activities:
+        if act.get("distance", 0) < 4000:
+            continue
+        detail = strava_get(token, f"activities/{act['id']}", include_all_efforts=True)
+        time.sleep(0.25)
+        for e in detail.get("best_efforts", []):
+            if e.get("distance") == 5000:
+                best_efforts.append({
+                    "secs": e["elapsed_time"],
+                    "date": act["start_date_local"][:10],
+                    "name": act["name"],
+                })
+    best_efforts.sort(key=lambda x: x["secs"])
+
+    athlete_id = strava_get(token, "athlete")["id"]
+    stats = strava_get(token, f"athletes/{athlete_id}/stats")
+
+    return {
+        "activities":   activities[:10],
+        "best_efforts": best_efforts,
+        "stats":        stats,
     }
 
 
@@ -410,7 +449,7 @@ def build_map_section(latest_map, best_efforts):
     return html, js
 
 
-def generate(strava, sleep_data, steps_data, runs, notion_lines):
+def generate(strava, louis_strava, sleep_data, steps_data, runs, notion_lines):
     best_efforts = strava["best_efforts"]
     stats        = strava["stats"]
 
@@ -433,8 +472,76 @@ def generate(strava, sleep_data, steps_data, runs, notion_lines):
 
     # Pace trend for chart — top 5 best efforts (oldest first)
     trend = list(reversed(best_efforts[:5]))
-    trend_labels = json.dumps([e["date"] for e in trend])
-    trend_data   = json.dumps([e["secs"] for e in trend])
+    jack_dates = [e["date"] for e in trend]
+    jack_secs  = [e["secs"] for e in trend]
+
+    # ── Louis's data ────────────────────────────────────────────────────────
+    if louis_strava and louis_strava["best_efforts"]:
+        louis_be        = louis_strava["best_efforts"]
+        louis_pb        = louis_be[0]
+        louis_pb_secs   = louis_pb["secs"]
+        louis_pb_time   = mmss(louis_pb_secs)
+        louis_pb_date   = louis_pb["date"]
+        louis_pb_pace   = mmss(louis_pb_secs // 5)
+        louis_gap_secs  = louis_pb_secs - GOAL_SECS
+        louis_gap_str   = mmss(louis_gap_secs) if louis_gap_secs > 0 else "Sub-20!"
+        louis_ytd_runs  = louis_strava["stats"].get("ytd_run_totals", {}).get("count", 0)
+        louis_ytd_km    = round((louis_strava["stats"].get("ytd_run_totals", {}).get("distance", 0) or 0) / 1000, 1)
+        louis_r4w_km    = round((louis_strava["stats"].get("recent_run_totals", {}).get("distance", 0) or 0) / 1000, 1)
+
+        # Merge chart dates (union of Jack + Louis best effort dates, sorted)
+        louis_trend   = list(reversed(louis_be[:5]))
+        louis_by_date = {e["date"]: e["secs"] for e in louis_trend}
+        jack_by_date  = {e["date"]: e["secs"] for e in trend}
+        all_dates     = sorted(set(jack_dates) | set(louis_by_date))
+        trend_labels  = json.dumps(all_dates)
+        trend_data    = json.dumps([jack_by_date.get(d) for d in all_dates])
+        louis_chart_data = json.dumps([louis_by_date.get(d) for d in all_dates])
+        louis_chart_dataset = (
+            f"{{label:'Louis',data:{louis_chart_data},"
+            f"borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.06)',"
+            f"borderWidth:2.5,pointBackgroundColor:'#3b82f6',pointRadius:5,"
+            f"tension:0.3,spanGaps:true,fill:false}}"
+        )
+
+        # Dynamic snark based on gap
+        jack_louis_gap = pb_secs - louis_pb_secs
+        if jack_louis_gap < -60:
+            snark = f"Currently <strong style='color:var(--louis)'>{mmss(abs(jack_louis_gap))} ahead of Jack</strong>. Enjoy it. The gap is closing fast."
+        elif jack_louis_gap < 0:
+            snark = f"Ahead by {mmss(abs(jack_louis_gap))}. Don't get comfortable &mdash; Jack is coming."
+        elif jack_louis_gap < 30:
+            snark = "Neck and neck. This is getting interesting."
+        else:
+            snark = f"Jack has overtaken Louis by <strong style='color:var(--jack)'>{mmss(jack_louis_gap)}</strong>. The reckoning has arrived."
+
+        louis_card_html = f"""  <div class="card rival-card rival-louis">
+    <div class="rival-name">Louis</div>
+    <div class="rival-pb" style="color:var(--louis)">{louis_pb_time}</div>
+    <div class="rival-meta">{louis_pb_pace} /km &nbsp;&middot;&nbsp; {louis_pb_date} &nbsp;&middot;&nbsp; Strava best effort</div>
+    <div class="rival-sub">{louis_ytd_runs} runs &nbsp;&middot;&nbsp; {louis_ytd_km}km YTD &nbsp;&middot;&nbsp; {louis_r4w_km}km last 4 wks</div>
+    <div class="rival-delta delta-behind">{louis_gap_str} from goal</div>
+    <div class="louis-snark">{snark}</div>
+  </div>"""
+
+    else:
+        # Louis not yet connected — use placeholder
+        trend_labels = json.dumps(jack_dates)
+        trend_data   = json.dumps(jack_secs)
+        louis_chart_dataset = (
+            f"{{label:'Louis',data:{json.dumps(jack_dates)}.map(()=>{LOUIS_SECS}),"
+            f"borderColor:'rgba(59,130,246,0.4)',borderDash:[6,4],"
+            f"borderWidth:1.5,pointRadius:0,fill:false}}"
+        )
+        louis_card_html = """  <div class="card rival-card rival-louis">
+    <div class="rival-name">Louis</div>
+    <div class="rival-pb" style="color:var(--subtle)">~21-ish</div>
+    <div class="rival-meta" style="color:var(--subtle)">Minutes. Apparently. Give or take.</div>
+    <div class="rival-delta delta-behind" style="opacity:.5">~1 min from goal (?)</div>
+    <div class="louis-snark">
+      Stuck somewhere in the low 21s, from what we hear &mdash; usually accompanied by a story about a slightly dodgy calf, a hilly route, or the wind being &ldquo;completely against him&rdquo;. Could break 20 any day now. Has been saying this since roughly late 2024. Bless.
+    </div>
+  </div>"""
 
     # Steps
     step_labels, step_counts, step_goals, step_colors = build_steps_chart_data(steps_data)
@@ -643,15 +750,7 @@ def generate(strava, sleep_data, steps_data, runs, notion_lines):
     <div class="rival-sub">All-time Garmin record: 24:44 (Aug 2023, Waltham Forest) &mdash; it&rsquo;s in there somewhere</div>
     <div class="rival-delta delta-behind">{gap_str} from goal</div>
   </div>
-  <div class="card rival-card rival-louis">
-    <div class="rival-name">Louis</div>
-    <div class="rival-pb" style="color:var(--subtle)">~21-ish</div>
-    <div class="rival-meta" style="color:var(--subtle)">Minutes. Apparently. Give or take.</div>
-    <div class="rival-delta delta-behind" style="opacity:.5">~1 min from goal (?)</div>
-    <div class="louis-snark">
-      Stuck somewhere in the low 21s, from what we hear &mdash; usually accompanied by a story about a slightly dodgy calf, a hilly route, or the wind being &ldquo;completely against him&rdquo;. Could break 20 any day now. Has been saying this since roughly late 2024. Bless.
-    </div>
-  </div>
+{louis_card_html}
 </div>
 
 {map_html}
@@ -798,8 +897,8 @@ new Chart(document.getElementById('paceChart'),{{
   data:{{
     labels:{trend_labels},
     datasets:[
-      {{label:"Jack",data:{trend_data},borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.07)',borderWidth:2.5,pointBackgroundColor:'#f97316',pointRadius:5,tension:0.3,fill:true}},
-      {{label:'Louis',data:{trend_labels}.map(()=>{LOUIS_SECS}),borderColor:'rgba(59,130,246,0.4)',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false}},
+      {{label:"Jack",data:{trend_data},borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.07)',borderWidth:2.5,pointBackgroundColor:'#f97316',pointRadius:5,tension:0.3,spanGaps:true,fill:true}},
+      {louis_chart_dataset},
       {{label:'Target',data:{trend_labels}.map(()=>{GOAL_SECS}),borderColor:'#22c55e',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}}
     ]
   }},
@@ -875,10 +974,19 @@ if __name__ == "__main__":
     runs       = garmin_recent_runs(days=35)
     print(f"  {len(sleep_data)} sleep nights, {len(steps_data)} step days, {len(runs)} runs")
 
+    print("Fetching Louis's Strava…")
+    louis_strava = fetch_louis_strava()
+    if louis_strava:
+        louis_pb = louis_strava["best_efforts"][0]["secs"] if louis_strava["best_efforts"] else None
+        print(f"  Louis PB: {mmss(louis_pb) if louis_pb else 'no best efforts yet'}, "
+              f"{len(louis_strava['activities'])} activities")
+    else:
+        print("  Louis not yet connected (run exchange_louis_code.py once he sends his code)")
+
     print("Fetching Notion plan…")
     notion_lines = fetch_notion_plan()
     print(f"  {len(notion_lines) if notion_lines else 0} blocks")
 
     print("Generating HTML…")
-    generate(strava, sleep_data, steps_data, runs, notion_lines)
+    generate(strava, louis_strava, sleep_data, steps_data, runs, notion_lines)
     print("Done.")

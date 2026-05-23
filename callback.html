@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strava Auth — Sub-20 Dashboard</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:#08090d;color:#e2e4f0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{background:#111218;border:1px solid #1e2030;border-radius:12px;padding:36px 32px;max-width:500px;width:100%;text-align:center}
+    .icon{font-size:52px;margin-bottom:18px}
+    h1{font-size:22px;font-weight:800;margin-bottom:10px}
+    .sub{font-size:14px;color:#7a7f9a;line-height:1.6;margin-bottom:22px}
+    .code-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7a7f9a;margin-bottom:8px}
+    .code-box{background:#08090d;border:2px solid #f97316;border-radius:8px;padding:16px 20px;font-family:monospace;font-size:13px;word-break:break-all;color:#f97316;margin-bottom:16px;text-align:left;line-height:1.5}
+    .copy-btn{background:#f97316;color:#08090d;border:none;border-radius:8px;padding:13px 24px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-bottom:14px;transition:background .15s}
+    .copy-btn:hover{background:#ea6d10}
+    .copy-btn.copied{background:#22c55e}
+    .note{font-size:12px;color:#3a3d52;line-height:1.6}
+    .error-msg{color:#ef4444;font-size:14px;margin-bottom:16px}
+    .already{color:#22c55e}
+  </style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="icon">⏳</div>
+  <h1>Loading…</h1>
+</div>
+<script>
+const p = new URLSearchParams(window.location.search);
+const code  = p.get('code');
+const error = p.get('error');
+const card  = document.getElementById('card');
+
+if (error) {
+  card.innerHTML = `
+    <div class="icon">🙅</div>
+    <h1>Authorization declined</h1>
+    <p class="sub error-msg">${error}</p>
+    <p class="sub">No worries — ask Jack to send the link again if you change your mind.</p>`;
+
+} else if (code) {
+  card.innerHTML = `
+    <div class="icon">✅</div>
+    <h1>You're in!</h1>
+    <p class="sub">Nearly done. Just send Jack this code — one message and you're connected to the dashboard forever.</p>
+    <div class="code-label">Your auth code</div>
+    <div class="code-box" id="codeEl">${code}</div>
+    <button class="copy-btn" id="copyBtn" onclick="doCopy()">Copy code</button>
+    <p class="note">This code expires in 30 minutes, but once Jack uses it your connection is permanent and refreshes automatically.</p>`;
+
+} else {
+  card.innerHTML = `
+    <div class="icon">🏃</div>
+    <h1>Nothing here yet</h1>
+    <p class="sub">This page is only useful after clicking the Strava auth link Jack sent you. Ask him for the link!</p>`;
+}
+
+function doCopy() {
+  const code = document.getElementById('codeEl').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy code'; btn.classList.remove('copied'); }, 2500);
+  });
+}
+</script>
+</body>
+</html>

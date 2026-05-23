@@ -206,7 +206,7 @@
   </div>
 </div>
 
-<p class="section-title">The Plan &mdash; 8-Week Programme <span style="font-weight:400;color:var(--muted)">(from Notion / Running Plan)</span></p>
+<p class="section-title">The Plan &mdash; 8-Week Programme <span style="font-weight:400;color:var(--muted)">(Notion not configured — set NOTION_TOKEN)</span></p>
 <div class="card next-up-card" style="margin-bottom:16px">
   <div class="card-label" style="color:var(--jack)">Coming up this week</div>
   <div class="next-up-item">
@@ -287,24 +287,14 @@
     <div class="card-label">Daily Steps</div>
     <div class="chart-wrap" style="height:170px"><canvas id="stepsChart"></canvas></div>
     <div class="stats-row" style="margin-top:14px">
-      <div class="stat-item"><div class="stat-val">11,138</div><div class="stat-lbl">6-day avg</div></div>
+      <div class="stat-item"><div class="stat-val">9,713</div><div class="stat-lbl">7-day avg</div></div>
       <div class="stat-item"><div class="stat-val">17,769</div><div class="stat-lbl">Best (May 21)</div></div>
-      <div class="stat-item"><div class="stat-val" style="color:var(--warn)">2/6</div><div class="stat-lbl">Goal days met</div></div>
+      <div class="stat-item"><div class="stat-val" style="color:var(--warn)">3/7</div><div class="stat-lbl">Goal days met</div></div>
     </div>
   </div>
   <div class="card">
     <div class="card-label">Sleep Quality &mdash; Last 5 Nights</div>
     
-    <div class="sleep-row">
-      <div class="sleep-row-header">
-        <span class="sleep-date">Mon May 18</span>
-        <span class="sleep-total">10h 38m</span>
-        <span class="sleep-bb" style="color:var(--target)">BB +64</span>
-      </div>
-      <div class="sleep-stage"><div class="stage-deep"  style="width:11.1%"></div><div class="stage-light" style="width:68.2%"></div><div class="stage-rem"   style="width:19.1%"></div><div class="stage-wake"  style="width:1.5%"></div></div>
-      <div class="sleep-detail">Deep 11% · REM 19% · HR avg 55bpm</div>
-    </div>
-
     <div class="sleep-row">
       <div class="sleep-row-header">
         <span class="sleep-date">Tue May 19</span>
@@ -343,6 +333,16 @@
       </div>
       <div class="sleep-stage"><div class="stage-deep"  style="width:9.2%"></div><div class="stage-light" style="width:67.9%"></div><div class="stage-rem"   style="width:22.6%"></div><div class="stage-wake"  style="width:0.2%"></div></div>
       <div class="sleep-detail">Deep 9% · REM 23% · HR avg 64bpm</div>
+    </div>
+
+    <div class="sleep-row">
+      <div class="sleep-row-header">
+        <span class="sleep-date">Sat May 23</span>
+        <span class="sleep-total">6h 39m</span>
+        <span class="sleep-bb" style="color:var(--target)">BB +57</span>
+      </div>
+      <div class="sleep-stage"><div class="stage-deep"  style="width:23.9%"></div><div class="stage-light" style="width:66.3%"></div><div class="stage-rem"   style="width:9.2%"></div><div class="stage-wake"  style="width:0.5%"></div></div>
+      <div class="sleep-detail">Deep 24% · REM 9% · HR avg 58bpm</div>
     </div>
     <div class="legend" style="margin-top:12px">
       <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div> Deep</div>
@@ -472,7 +472,7 @@ new Chart(document.getElementById('paceChart'),{
   data:{
     labels:["2026-05-01", "2026-04-26", "2026-04-25", "2026-05-02", "2026-05-09"],
     datasets:[
-      {label:"Jack",data:[1635, 1602, 1597, 1553, 1552],borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.07)',borderWidth:2.5,pointBackgroundColor:'#f97316',pointRadius:5,tension:0.3,fill:true},
+      {label:"Jack",data:[1635, 1602, 1597, 1553, 1552],borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.07)',borderWidth:2.5,pointBackgroundColor:'#f97316',pointRadius:5,tension:0.3,spanGaps:true,fill:true},
       {label:'Louis',data:["2026-05-01", "2026-04-26", "2026-04-25", "2026-05-02", "2026-05-09"].map(()=>1260),borderColor:'rgba(59,130,246,0.4)',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false},
       {label:'Target',data:["2026-05-01", "2026-04-26", "2026-04-25", "2026-05-02", "2026-05-09"].map(()=>1200),borderColor:'#22c55e',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}
     ]
@@ -517,10 +517,10 @@ new Chart(document.getElementById('weeklyDistChart'),{
 new Chart(document.getElementById('stepsChart'),{
   type:'bar',
   data:{
-    labels:["May 17","May 18","May 19","May 20","May 21","May 22"],
+    labels:["May 17","May 18","May 19","May 20","May 21","May 22","May 23"],
     datasets:[
-      {label:'Steps',data:[5787,9937,12291,10030,17769,11015],backgroundColor:["rgba(249,115,22,0.5)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)"],borderRadius:4},
-      {label:'Goal',data:[12410,11090,10860,11010,10920,11610],type:'line',borderColor:'rgba(234,179,8,0.5)',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}
+      {label:'Steps',data:[5787,9937,12291,10030,17769,11929,253],backgroundColor:["rgba(249,115,22,0.5)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)"],borderRadius:4},
+      {label:'Goal',data:[12410,11090,10860,11010,10920,11610,11680],type:'line',borderColor:'rgba(234,179,8,0.5)',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}
     ]
   },
   options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
