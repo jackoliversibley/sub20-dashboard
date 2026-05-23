@@ -3,9 +3,7 @@
 set -euo pipefail
 
 REPO="$HOME/sub20-dashboard"
-LOG="$REPO/sync.log"
-
-log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG"; }
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
 log "=== Sub-20 sync started ==="
 
@@ -16,7 +14,7 @@ git pull --ff-only origin main 2>/dev/null || true
 
 # Generate the dashboard (reads local Garmin DB, calls Strava + Notion APIs)
 log "Generating dashboard…"
-python3 generate_dashboard.py >> "$LOG" 2>&1
+python3 generate_dashboard.py
 
 # Commit and push if anything changed
 if git diff --quiet index.html; then
