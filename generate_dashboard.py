@@ -36,9 +36,12 @@ LOUIS_SECS = 1260   # ~21:00
 def strava_refresh(token_file=None):
     token_file = Path(token_file) if token_file else STRAVA_TOKENS
     tokens = json.loads(token_file.read_text())
+    # Use credentials embedded in token file (Louis's own app), else fall back to Jack's
+    client_id     = tokens.get("client_id",     STRAVA_CLIENT_ID)
+    client_secret = tokens.get("client_secret", STRAVA_CLIENT_SECRET)
     r = requests.post("https://www.strava.com/oauth/token", data={
-        "client_id":     STRAVA_CLIENT_ID,
-        "client_secret": STRAVA_CLIENT_SECRET,
+        "client_id":     client_id,
+        "client_secret": client_secret,
         "refresh_token": tokens["refresh_token"],
         "grant_type":    "refresh_token",
     })

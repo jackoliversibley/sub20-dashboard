@@ -47,7 +47,7 @@ if (error) {
     <div class="code-label">Your auth code</div>
     <div class="code-box" id="codeEl">${code}</div>
     <button class="copy-btn" id="copyBtn" onclick="doCopy()">Copy code</button>
-    <p class="note">This code expires in 30 minutes, but once Jack uses it your connection is permanent and refreshes automatically.</p>`;
+    <p class="note">Send Jack <strong style="color:#e2e4f0">three things</strong>: this code, your <strong style="color:#e2e4f0">Client ID</strong> and your <strong style="color:#e2e4f0">Client Secret</strong> — all visible on your Strava API settings page. Once Jack has these, your connection is permanent.</p>`;
 
 } else {
   card.innerHTML = `
