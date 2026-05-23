@@ -109,7 +109,7 @@
     <h1>Jack vs Louis &mdash; <span>Sub-20 5k</span></h1>
     <div style="font-size:12px;color:var(--subtle);margin-top:4px">The reckoning. Live-updated daily from Strava, Garmin &amp; Notion.</div>
   </div>
-  <div class="sync-badge">Synced: <b>May 22, 2026</b></div>
+  <div class="sync-badge">Synced: <b>May 23, 2026</b></div>
 </header>
 
 <div class="intro-banner">
@@ -287,9 +287,9 @@
     <div class="card-label">Daily Steps</div>
     <div class="chart-wrap" style="height:170px"><canvas id="stepsChart"></canvas></div>
     <div class="stats-row" style="margin-top:14px">
-      <div class="stat-item"><div class="stat-val">9,710</div><div class="stat-lbl">7-day avg</div></div>
+      <div class="stat-item"><div class="stat-val">11,138</div><div class="stat-lbl">6-day avg</div></div>
       <div class="stat-item"><div class="stat-val">17,769</div><div class="stat-lbl">Best (May 21)</div></div>
-      <div class="stat-item"><div class="stat-val" style="color:var(--warn)">2/7</div><div class="stat-lbl">Goal days met</div></div>
+      <div class="stat-item"><div class="stat-val" style="color:var(--warn)">2/6</div><div class="stat-lbl">Goal days met</div></div>
     </div>
   </div>
   <div class="card">
@@ -517,10 +517,10 @@ new Chart(document.getElementById('weeklyDistChart'),{
 new Chart(document.getElementById('stepsChart'),{
   type:'bar',
   data:{
-    labels:["May 15","May 17","May 18","May 19","May 20","May 21","May 22"],
+    labels:["May 17","May 18","May 19","May 20","May 21","May 22"],
     datasets:[
-      {label:'Steps',data:[1146,5787,9937,12291,10030,17769,11015],backgroundColor:["rgba(249,115,22,0.5)","rgba(249,115,22,0.5)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)"],borderRadius:4},
-      {label:'Goal',data:[12410,12410,11090,10860,11010,10920,11610],type:'line',borderColor:'rgba(234,179,8,0.5)',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}
+      {label:'Steps',data:[5787,9937,12291,10030,17769,11015],backgroundColor:["rgba(249,115,22,0.5)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)"],borderRadius:4},
+      {label:'Goal',data:[12410,11090,10860,11010,10920,11610],type:'line',borderColor:'rgba(234,179,8,0.5)',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}
     ]
   },
   options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
