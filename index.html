@@ -206,7 +206,7 @@
   </div>
 </div>
 
-<p class="section-title">The Plan &mdash; 8-Week Programme <span style="font-weight:400;color:var(--muted)">(from Notion / Running Plan)</span></p>
+<p class="section-title">The Plan &mdash; 8-Week Programme <span style="font-weight:400;color:var(--muted)">(Notion not configured — set NOTION_TOKEN)</span></p>
 <div class="card next-up-card" style="margin-bottom:16px">
   <div class="card-label" style="color:var(--jack)">Coming up this week</div>
   <div class="next-up-item">
@@ -287,9 +287,9 @@
     <div class="card-label">Daily Steps</div>
     <div class="chart-wrap" style="height:170px"><canvas id="stepsChart"></canvas></div>
     <div class="stats-row" style="margin-top:14px">
-      <div class="stat-item"><div class="stat-val">10,692</div><div class="stat-lbl">7-day avg</div></div>
+      <div class="stat-item"><div class="stat-val">13,058</div><div class="stat-lbl">7-day avg</div></div>
       <div class="stat-item"><div class="stat-val">17,769</div><div class="stat-lbl">Best (May 21)</div></div>
-      <div class="stat-item"><div class="stat-val" style="color:var(--warn)">4/7</div><div class="stat-lbl">Goal days met</div></div>
+      <div class="stat-item"><div class="stat-val" style="color:var(--warn)">5/7</div><div class="stat-lbl">Goal days met</div></div>
     </div>
   </div>
   <div class="card">
@@ -334,6 +334,16 @@
       <div class="sleep-stage"><div class="stage-deep"  style="width:23.9%"></div><div class="stage-light" style="width:66.3%"></div><div class="stage-rem"   style="width:9.2%"></div><div class="stage-wake"  style="width:0.5%"></div></div>
       <div class="sleep-detail">Deep 24% · REM 9% · HR avg 58bpm</div>
     </div>
+
+    <div class="sleep-row">
+      <div class="sleep-row-header">
+        <span class="sleep-date">Sun May 24</span>
+        <span class="sleep-total">6h 19m</span>
+        <span class="sleep-bb" style="color:var(--target)">BB +68</span>
+      </div>
+      <div class="sleep-stage"><div class="stage-deep"  style="width:18.2%"></div><div class="stage-light" style="width:60.2%"></div><div class="stage-rem"   style="width:21.6%"></div></div>
+      <div class="sleep-detail">Deep 18% · REM 22% · HR avg 55bpm</div>
+    </div>
     <div class="legend" style="margin-top:12px">
       <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div> Deep</div>
       <div class="legend-item"><div class="legend-dot" style="background:#64748b"></div> Light</div>
@@ -351,6 +361,15 @@
       <th>Pace /km</th><th>Avg HR</th><th>Elev</th>
     </tr></thead>
     <tbody>
+      <tr>
+        <td>May 24</td>
+        <td>Canterbury Running</td>
+        <td>5.41 km</td>
+        <td><span class="seg-badge">seg</span> 26:44</td>
+        <td><span class="pace-pill pace-ok">5:23</span></td>
+        <td>173 bpm</td>
+        <td>+32m</td>
+      </tr>
       <tr>
         <td>May 9</td>
         <td>Canterbury Running <span class="pr-badge">PB</span></td>
@@ -432,15 +451,6 @@
         <td>165 bpm</td>
         <td>+53m</td>
       </tr>
-      <tr>
-        <td>Apr 21</td>
-        <td>Canterbury Running</td>
-        <td>6.02 km</td>
-        <td><span class="seg-badge">seg</span> 31:46</td>
-        <td><span class="pace-pill pace-easy">6:36</span></td>
-        <td>152 bpm</td>
-        <td>+79m</td>
-      </tr>
     </tbody>
   </table>
   <div class="table-note" style="padding-bottom:12px">5k Split = Strava best-effort segment recorded during that activity, not total activity time.</div>
@@ -509,7 +519,7 @@ new Chart(document.getElementById('stepsChart'),{
   data:{
     labels:["May 18","May 19","May 20","May 21","May 22","May 23","May 24"],
     datasets:[
-      {label:'Steps',data:[9937,12291,10030,17769,11929,12506,388],backgroundColor:["rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(34,197,94,0.7)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)"],borderRadius:4},
+      {label:'Steps',data:[9937,12291,10030,17769,11929,12506,16945],backgroundColor:["rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(249,115,22,0.5)","rgba(34,197,94,0.7)","rgba(34,197,94,0.7)","rgba(34,197,94,0.7)","rgba(34,197,94,0.7)"],borderRadius:4},
       {label:'Goal',data:[11090,10860,11010,10920,11610,11680,11850],type:'line',borderColor:'rgba(234,179,8,0.5)',borderDash:[4,3],borderWidth:1.5,pointRadius:0,fill:false}
     ]
   },
